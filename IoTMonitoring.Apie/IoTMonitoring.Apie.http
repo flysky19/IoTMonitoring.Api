@@ -1,0 +1,6 @@
+@IoTMonitoring.Apie_HostAddress = http://localhost:5153
+
+GET {{IoTMonitoring.Apie_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
