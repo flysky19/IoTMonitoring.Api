@@ -1,50 +1,35 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
-using IoTMonitoring.Api.Data.DbContext;
-using IoTMonitoring.Api.Data.Repositories;
-using IoTMonitoring.Api.Data.Repositories.Interfaces;
-using IoTMonitoring.Api.Services.Implementations;
-using IoTMonitoring.Api.Services.Interfaces;
+using System;
+using IoTMonitoring.Api.Extensions;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DB Context 설정
-builder.Services.AddDbContext<IoTDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// AutoMapper 등록
-builder.Services.AddAutoMapper(typeof(Program));
-
-// 리포지토리 등록
-builder.Services.AddScoped<ISensorRepository, SensorRepository>();
-
 // 서비스 등록
-builder.Services.AddScoped<ISensorService, SensorService>();
-
-// 컨트롤러 추가
 builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
-// CORS 정책 설정
+// 사용자 정의 서비스 등록
+builder.Services.ConfigureDatabase(builder.Configuration);
+builder.Services.ConfigureRepositories();
+builder.Services.ConfigureServices();
+builder.Services.ConfigureAuthentication(builder.Configuration);
+
+// CORS 설정
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", builder =>
-    {
-        builder.AllowAnyOrigin()
-               .AllowAnyMethod()
-               .AllowAnyHeader();
-    });
-});
-
-// Swagger 설정
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "IoT Monitoring API", Version = "v1" });
+    options.AddPolicy("CorsPolicy",
+        builder => builder
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
 });
 
 var app = builder.Build();
 
-// 개발 환경에서 Swagger 활성화
+// HTTP 요청 파이프라인 구성
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -52,7 +37,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+app.UseCors("CorsPolicy");
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

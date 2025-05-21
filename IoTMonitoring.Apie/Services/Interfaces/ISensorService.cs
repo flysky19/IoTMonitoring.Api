@@ -24,7 +24,7 @@ namespace IoTMonitoring.Api.Services.Interfaces
         // 센서 연결 관련 작업
         Task UpdateSensorConnectionStatusAsync(int sensorId, string connectionStatus, string reason = null);
         Task UpdateSensorHeartbeatAsync(int sensorId);
-        Task<IEnumerable<SensorConnectionHistoryDto>> GetSensorConnectionHistoryAsync(int sensorId, DateTime startDate, DateTime endDate, int limit = 100);
+        //Task<IEnumerable<SensorConnectionHistoryDto>> GetSensorConnectionHistoryAsync(int sensorId, DateTime startDate, DateTime endDate, int limit = 100);
 
         // MQTT 토픽 관련 작업
         Task<SensorMqttTopicDto> GetSensorMqttTopicsAsync(int sensorId);

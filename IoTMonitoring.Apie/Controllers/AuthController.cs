@@ -1,101 +1,73 @@
-﻿// Controllers/AuthController.cs
-using Microsoft.AspNetCore.Mvc;
-using IoTMonitoring.Api.DTOs;
-using IoTMonitoring.Api.Services.Interfaces;
+﻿using System;
+using System.Security.Authentication;
 using System.Threading.Tasks;
+using IoTMonitoring.Api.DTOs.Auth;
+using IoTMonitoring.Api.Services.Auth.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace IoTMonitoring.Api.Controllers
 {
-    [ApiController]
     [Route("api/auth")]
+    [ApiController]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IAuthService authService)
+        public AuthController(IAuthService authService, ILogger<AuthController> logger)
         {
             _authService = authService;
+            _logger = logger;
         }
 
-        // 로그인
         [HttpPost("login")]
-        public async Task<ActionResult<AuthResultDto>> Login([FromBody] LoginDto loginDto)
+        public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
         {
             try
             {
-                var result = await _authService.LoginAsync(loginDto.Username, loginDto.Password);
+                var result = await _authService.LoginAsync(request);
                 return Ok(result);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (AuthenticationException ex)
             {
+                _logger.LogWarning($"로그인 실패: {ex.Message}");
                 return Unauthorized(new { message = ex.Message });
             }
-        }
-
-        // 비밀번호 변경
-        [HttpPost("change-password")]
-        public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
-        {
-            try
+            catch (Exception ex)
             {
-                await _authService.ChangePasswordAsync(
-                    changePasswordDto.Username,
-                    changePasswordDto.CurrentPassword,
-                    changePasswordDto.NewPassword);
-
-                return Ok(new { message = "Password changed successfully" });
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Unauthorized(new { message = "Invalid username or current password" });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
+                _logger.LogError($"로그인 처리 중 오류: {ex.Message}");
+                return StatusCode(500, new { message = "로그인 처리 중 오류가 발생했습니다." });
             }
         }
 
-        // 비밀번호 재설정 요청
-        [HttpPost("forgot-password")]
-        public async Task<ActionResult> ForgotPassword([FromBody] ForgotPasswordDto forgotPasswordDto)
-        {
-            await _authService.RequestPasswordResetAsync(forgotPasswordDto.Email);
-            // 보안을 위해 항상 성공 메시지 반환 (실제 이메일 존재 여부 노출 방지)
-            return Ok(new { message = "If the email exists, a password reset link has been sent" });
-        }
-
-        // 비밀번호 재설정
-        [HttpPost("reset-password")]
-        public async Task<ActionResult> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
-        {
-            try
-            {
-                await _authService.ResetPasswordAsync(
-                    resetPasswordDto.Token,
-                    resetPasswordDto.Email,
-                    resetPasswordDto.NewPassword);
-
-                return Ok(new { message = "Password has been reset successfully" });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        // 토큰 갱신
         [HttpPost("refresh-token")]
-        public async Task<ActionResult<AuthResultDto>> RefreshToken([FromBody] RefreshTokenDto refreshTokenDto)
+        public async Task<ActionResult<LoginResponse>> RefreshToken([FromBody] RefreshTokenRequest request)
         {
             try
             {
-                var result = await _authService.RefreshTokenAsync(refreshTokenDto.RefreshToken);
+                var result = await _authService.RefreshTokenAsync(request.RefreshToken);
                 return Ok(result);
             }
-            catch (UnauthorizedAccessException)
+            catch (AuthenticationException ex)
             {
-                return Unauthorized(new { message = "Invalid or expired refresh token" });
+                _logger.LogWarning($"토큰 갱신 실패: {ex.Message}");
+                return Unauthorized(new { message = ex.Message });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError($"토큰 갱신 중 오류: {ex.Message}");
+                return StatusCode(500, new { message = "토큰 갱신 중 오류가 발생했습니다." });
+            }
+        }
+
+        [Authorize]
+        [HttpGet("validate")]
+        public async Task<ActionResult> ValidateToken()
+        {
+            // 이 엔드포인트는 Authorize 속성으로 인해 토큰이 유효한 경우에만 접근 가능
+            return Ok(new { isValid = true });
         }
     }
 }

@@ -94,10 +94,10 @@ namespace IoTMonitoring.Api.Services.Implementations
             throw new NotImplementedException();
         }
 
-        public Task<IEnumerable<SensorConnectionHistoryDto>> GetSensorConnectionHistoryAsync(int sensorId, DateTime startDate, DateTime endDate, int limit = 100)
-        {
-            throw new NotImplementedException();
-        }
+        //public Task<IEnumerable<SensorConnectionHistoryDto>> GetSensorConnectionHistoryAsync(int sensorId, DateTime startDate, DateTime endDate, int limit = 100)
+        //{
+        //    throw new NotImplementedException();
+        //}
 
         public Task<SensorMqttTopicDto> GetSensorMqttTopicsAsync(int sensorId)
         {
