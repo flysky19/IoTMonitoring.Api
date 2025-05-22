@@ -13,6 +13,7 @@ namespace IoTMonitoring.Api.DTOs
         public float? PM10_0 { get; set; }
         public float? PM_0_5 { get; set; }
         public float? PM_5_0 { get; set; }
+        public string RawData { get; set; }
     }
 
     // 풍향 데이터 DTO
@@ -22,6 +23,7 @@ namespace IoTMonitoring.Api.DTOs
         public int SensorID { get; set; }
         public DateTime Timestamp { get; set; }
         public float? WindSpeed { get; set; }
+        public string RawData { get; set; }
     }
 
     // 온습도 데이터 DTO
@@ -32,13 +34,13 @@ namespace IoTMonitoring.Api.DTOs
         public DateTime Timestamp { get; set; }
         public float? Temperature { get; set; }
         public float? Humidity { get; set; }
+        public string RawData { get; set; }
     }
 
     // 파티클 데이터 생성 DTO
     public class ParticleDataCreateDto
     {
         public int SensorID { get; set; }
-        public DateTime? Timestamp { get; set; }
         public float? PM1_0 { get; set; }
         public float? PM2_5 { get; set; }
         public float? PM4_0 { get; set; }
@@ -52,7 +54,6 @@ namespace IoTMonitoring.Api.DTOs
     public class WindDataCreateDto
     {
         public int SensorID { get; set; }
-        public DateTime? Timestamp { get; set; }
         public float? WindSpeed { get; set; }
         public string RawData { get; set; }
     }
@@ -61,10 +62,20 @@ namespace IoTMonitoring.Api.DTOs
     public class TempHumidityDataCreateDto
     {
         public int SensorID { get; set; }
-        public DateTime? Timestamp { get; set; }
         public float? Temperature { get; set; }
         public float? Humidity { get; set; }
         public string RawData { get; set; }
+    }
+
+    // 센서 연결 이력 DTO
+    public class SensorConnectionHistoryDto
+    {
+        public long HistoryID { get; set; }
+        public int SensorID { get; set; }
+        public DateTime StatusChangeTime { get; set; }
+        public string OldStatus { get; set; }
+        public string NewStatus { get; set; }
+        public string ChangeReason { get; set; }
     }
 
     // 집계된 데이터 DTO

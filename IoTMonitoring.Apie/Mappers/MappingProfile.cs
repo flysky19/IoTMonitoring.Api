@@ -11,13 +11,13 @@ namespace IoTMonitoring.Api.Mappers
         {
             // Sensor -> SensorDto
             CreateMap<Sensor, SensorDto>()
-                .ForMember(dest => dest.GroupName, opt => opt.MapFrom(src => src.Group != null ? src.Group.GroupName : null))
-                .ForMember(dest => dest.Location, opt => opt.MapFrom(src => src.Group != null ? src.Group.Location : null));
+                .ForMember(dest => dest.GroupName, opt => opt.MapFrom(src => src.SensorGroup != null ? src.SensorGroup.GroupName : null))
+                .ForMember(dest => dest.Location, opt => opt.MapFrom(src => src.SensorGroup != null ? src.SensorGroup.Location : null));
 
             // Sensor -> SensorDetailDto
             CreateMap<Sensor, SensorDetailDto>()
-                .ForMember(dest => dest.GroupName, opt => opt.MapFrom(src => src.Group != null ? src.Group.GroupName : null))
-                .ForMember(dest => dest.Location, opt => opt.MapFrom(src => src.Group != null ? src.Group.Location : null));
+                .ForMember(dest => dest.GroupName, opt => opt.MapFrom(src => src.SensorGroup != null ? src.SensorGroup.GroupName : null))
+                .ForMember(dest => dest.Location, opt => opt.MapFrom(src => src.SensorGroup != null ? src.SensorGroup.Location : null));
 
             // 필요한 추가 매핑 구성
         }

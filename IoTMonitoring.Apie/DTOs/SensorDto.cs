@@ -1,4 +1,6 @@
 ﻿// DTOs/SensorDtos.cs
+using IoTMonitoring.Api.Data.Models;
+
 namespace IoTMonitoring.Api.DTOs
 {
     // 센서 기본 정보 DTO
@@ -79,6 +81,12 @@ namespace IoTMonitoring.Api.DTOs
         public string HeartbeatTopic { get; set; }
         public byte QoS { get; set; }
         public bool Retained { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+
+        // Navigation Property
+        public Sensor Sensor { get; set; }
     }
 
     // 센서 MQTT 토픽 생성 DTO
@@ -101,5 +109,20 @@ namespace IoTMonitoring.Api.DTOs
         public string HeartbeatTopic { get; set; }
         public byte QoS { get; set; }
         public bool Retained { get; set; }
+    }
+
+    // 센서 상태 DTO (추가)
+    public class SensorStatusDto
+    {
+        public int SensorID { get; set; }
+        public string Name { get; set; }
+        public string SensorType { get; set; }
+        public string Status { get; set; }
+        public string ConnectionStatus { get; set; }
+        public DateTime? LastCommunication { get; set; }
+        public DateTime? LastHeartbeat { get; set; }
+        public bool IsOnline { get; set; }
+        public int UptimePercentage { get; set; }
+        public string StatusMessage { get; set; }
     }
 }

@@ -77,7 +77,7 @@ namespace IoTMonitoring.Api.Data.DbContext
                 .HasForeignKey(sg => sg.CompanyID);
 
             modelBuilder.Entity<Sensor>()
-                .HasOne(s => s.Group)
+                .HasOne(s => s.SensorGroup)
                 .WithMany(sg => sg.Sensors)
                 .HasForeignKey(s => s.GroupID);
 

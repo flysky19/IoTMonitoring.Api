@@ -15,6 +15,6 @@ namespace IoTMonitoring.Api.Data.Models
 
         // 탐색 속성
         public Company Company { get; set; }
-        public ICollection<Sensor> Sensors { get; set; }
+        public List<Sensor> Sensors { get; set; } = new List<Sensor>();
     }
 }

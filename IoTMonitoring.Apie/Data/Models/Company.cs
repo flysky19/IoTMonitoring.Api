@@ -13,7 +13,7 @@
         public bool Active { get; set; }
 
         // 탐색 속성
-        public ICollection<SensorGroup> SensorGroups { get; set; }
+        public List<SensorGroup> SensorGroups { get; set; } = new List<SensorGroup>();
         public ICollection<UserCompany> UserCompanies { get; set; }
     }
 }

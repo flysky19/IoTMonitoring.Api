@@ -20,6 +20,6 @@
         public DateTime? UpdatedAt { get; set; }
 
         // 탐색 속성
-        public SensorGroup Group { get; set; }
+        public SensorGroup SensorGroup { get; set; }
     }
 }
