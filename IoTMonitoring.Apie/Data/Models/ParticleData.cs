@@ -1,19 +1,30 @@
-﻿namespace IoTMonitoring.Api.Data.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
+
+namespace IoTMonitoring.Api.Data.Models
 {
+    [Table("ParticleData")]
     public class ParticleData
     {
+        [Key]
         public long DataID { get; set; }
+
+        [Required]
         public int SensorID { get; set; }
-        public DateTime Timestamp { get; set; }
+
+        [Required]
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
         public float? PM1_0 { get; set; }
         public float? PM2_5 { get; set; }
         public float? PM4_0 { get; set; }
         public float? PM10_0 { get; set; }
         public float? PM_0_5 { get; set; }
         public float? PM_5_0 { get; set; }
-        public string RawData { get; set; } // JSON 형식의 데이터
 
-        // 탐색 속성
-        public Sensor Sensor { get; set; }
+        public string? RawData { get; set; }
+
+        [ForeignKey("SensorID")]
+        public virtual Sensor Sensor { get; set; }
     }
 }

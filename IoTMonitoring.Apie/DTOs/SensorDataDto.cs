@@ -41,6 +41,9 @@ namespace IoTMonitoring.Api.DTOs
     public class ParticleDataCreateDto
     {
         public int SensorID { get; set; }
+
+        public DateTime Timestamp { get; set; }
+
         public float? PM1_0 { get; set; }
         public float? PM2_5 { get; set; }
         public float? PM4_0 { get; set; }
@@ -56,12 +59,15 @@ namespace IoTMonitoring.Api.DTOs
         public int SensorID { get; set; }
         public float? WindSpeed { get; set; }
         public string RawData { get; set; }
+
+        public DateTime Timestamp { get; set; }
     }
 
     // 온습도 데이터 생성 DTO
     public class TempHumidityDataCreateDto
     {
         public int SensorID { get; set; }
+        public DateTime Timestamp { get; set; }
         public float? Temperature { get; set; }
         public float? Humidity { get; set; }
         public string RawData { get; set; }

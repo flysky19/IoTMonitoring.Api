@@ -19,6 +19,9 @@ using IoTMonitoring.Api.Services.Sensor.Interfaces;
 using IoTMonitoring.Api.Services.Sensor;
 using IoTMonitoring.Api.Mappers.Interfaces;
 using IoTMonitoring.Api.Mappers;
+using IoTMonitoring.Api.Services.MQTT.Interfaces;
+using IoTMonitoring.Api.Services.MQTT;
+using IoTMonitoring.Api.Data.DbContext;
 
 namespace IoTMonitoring.Api.Extensions
 {
@@ -71,8 +74,6 @@ namespace IoTMonitoring.Api.Extensions
                 services.AddScoped<ISensorMqttTopicRepository, SensorMqttTopicRepository>();
                 services.AddScoped<ISensorConnectionHistoryRepository, SensorConnectionHistoryRepository>();
 
-                // 추가 리포지토리 등록...
-
 
                 Console.WriteLine("모든 리포지토리 등록 등록 완료");
             }
@@ -87,9 +88,6 @@ namespace IoTMonitoring.Api.Extensions
 
         public static void ConfigureServices(this IServiceCollection services)
         {
-            
-            // 추가 서비스 등록...
-
             try
             {
                 Console.WriteLine("비즈니스 서비스 등록 중...");
@@ -102,6 +100,10 @@ namespace IoTMonitoring.Api.Extensions
                 // 센서 관련 서비스 (간단한 구현 사용)
                 services.AddScoped<ISensorService, SensorService>();
 
+                // MQTT 서비스
+                services.AddScoped<IMqttService, MqttService>();
+
+                //services.AddSingleton<ISensorDataService, SensorDataService>();
 
                 Console.WriteLine("모든 비즈니스 서비스 등록 완료");
             }

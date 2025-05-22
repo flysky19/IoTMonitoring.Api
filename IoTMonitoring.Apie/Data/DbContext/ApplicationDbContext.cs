@@ -4,9 +4,9 @@ using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace IoTMonitoring.Api.Data.DbContext
 {
-    public class IoTDbContext : Microsoft.EntityFrameworkCore.DbContext
+    public class ApplicationDbContext : Microsoft.EntityFrameworkCore.DbContext
     {
-        public IoTDbContext(DbContextOptions<IoTDbContext> options) : base(options)
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
         }
 

@@ -4,13 +4,23 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using IoTMonitoring.Api.Services.MQTT.Interfaces;
+using IoTMonitoring.Api.Data.DbContext;
+using Microsoft.EntityFrameworkCore;
+using IoTMonitoring.Api.Services.SignalR.Interfaces;
+using IoTMonitoring.Api.Services.SignalR;
+using IoTMonitoring.Api.Hubs;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 서비스 등록
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddSwaggerGen();
 
 // Swagger 설정
 builder.Services.AddSwaggerGen(c =>
@@ -64,6 +74,9 @@ try
 {
     Console.WriteLine("데이터베이스 설정 중...");
     builder.Services.ConfigureDatabase(builder.Configuration);
+    //builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    //options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 
     Console.WriteLine("로깅 설정 중...");
     builder.Services.ConfigureLogging();
@@ -86,12 +99,62 @@ try
 catch (Exception ex)
 {
     Console.WriteLine($"서비스 등록 중 오류: {ex.Message}");
+    Console.WriteLine($"스택 트레이스: {ex.StackTrace}");
     throw;
 }
 
+// SignalR 서비스 등록
+builder.Services.AddSignalR();
+builder.Services.AddScoped<ISignalRService, SignalRService>();
+
+
+// JWT 설정 (app.Build() 이전에 위치해야 함!)
+//var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+//var secretKey = jwtSettings["SecretKey"];
+
+//if (string.IsNullOrEmpty(secretKey))
+//{
+//    throw new InvalidOperationException("JWT SecretKey가 설정되지 않았습니다.");
+//}
+
+//var key = Encoding.UTF8.GetBytes(secretKey);
+
+//builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+//    .AddJwtBearer(options =>
+//    {
+//        options.TokenValidationParameters = new TokenValidationParameters
+//        {
+//            ValidateIssuerSigningKey = true,
+//            IssuerSigningKey = new SymmetricSecurityKey(key),
+//            ValidateIssuer = true,
+//            ValidIssuer = jwtSettings["Issuer"],
+//            ValidateAudience = true,
+//            ValidAudience = jwtSettings["Audience"],
+//            ValidateLifetime = true,
+//            ClockSkew = TimeSpan.Zero
+//        };
+
+//        // SignalR을 위한 토큰 설정
+//        options.Events = new JwtBearerEvents
+//        {
+//            OnMessageReceived = context =>
+//            {
+//                var accessToken = context.Request.Query["access_token"];
+//                var path = context.HttpContext.Request.Path;
+//                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/sensorHub"))
+//                {
+//                    context.Token = accessToken;
+//                }
+//                return Task.CompletedTask;
+//            }
+//        };
+//    });
 
 
 var app = builder.Build();
+
+Console.WriteLine($"현재 환경: {app.Environment.EnvironmentName}");
+Console.WriteLine($"IsDevelopment: {app.Environment.IsDevelopment()}");
 
 if (app.Environment.IsDevelopment())
 {
@@ -99,17 +162,42 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "IoT Monitoring API V1");
-        c.RoutePrefix = string.Empty;
+        c.RoutePrefix = "swagger"; // Swagger를 /swagger 경로로 제한
     });
 }
 
-app.UseCors("AllowAll");
+app.UseStaticFiles();
+app.UseDefaultFiles();
+app.UseDefaultFiles(new DefaultFilesOptions
+{
+    DefaultFileNames = new List<string> { "index.html" }
+});
+app.UseRouting();
 
+app.UseCors("AllowAll");
 app.UseHttpsRedirection();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGet("/debug", () => "API is running!");
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var mqttService = scope.ServiceProvider.GetRequiredService<IMqttService>();
+    _ = Task.Run(async () => await mqttService.StartAsync());
+}
+
+
+Console.WriteLine("애플리케이션이 시작되었습니다.");
+Console.WriteLine($"Swagger URL: https://localhost:7051/swagger");
+Console.WriteLine($"Debug URL: https://localhost:7051/debug");
+
+
+// SignalR Hub 엔드포인트 매핑
+app.MapHub<SensorHub>("/sensorHub");
+
 
 app.Run();

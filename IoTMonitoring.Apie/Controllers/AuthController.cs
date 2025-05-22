@@ -62,6 +62,18 @@ namespace IoTMonitoring.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// 로그아웃
+        /// </summary>
+        [HttpPost("logout")]
+        [Authorize]
+        public ActionResult Logout()
+        {
+            // 실제로는 refresh token을 블랙리스트에 추가하거나 무효화
+            return Ok(new { message = "로그아웃이 완료되었습니다." });
+        }
+
+
         [Authorize]
         [HttpGet("validate")]
         public async Task<ActionResult> ValidateToken()

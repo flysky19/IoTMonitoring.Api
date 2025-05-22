@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT 모니터링 시스템 - 로그인</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .login-header h1 {
+            color: #333;
+            margin: 0;
+            font-size: 24px;
+        }
+        
+        .login-header p {
+            color: #666;
+            margin: 10px 0 0 0;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .login-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .demo-info {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        .demo-info strong {
+            display: block;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>🌐 IoT 모니터링 시스템</h1>
+            <p>로그인하여 시스템에 접속하세요</p>
+        </div>
+        
+        <div id="errorMessage" class="error-message"></div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">사용자명</label>
+                <input type="text" id="username" name="username" required autocomplete="username">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">비밀번호</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
+            </div>
+            
+            <button type="submit" id="loginBtn" class="login-btn">로그인</button>
+        </form>
+        
+        <div class="demo-info">
+            <strong>데모 계정:</strong>
+            데이터베이스에 등록된 사용자 계정으로 로그인하세요.<br>
+            기본 관리자 계정이 있다면 해당 정보를 사용하세요.
+        </div>
+    </div>
+
+    <script>
+        // 이미 로그인된 경우 대시보드로 리다이렉트
+        if (localStorage.getItem('authToken')) {
+            window.location.href = '/dashboard.html';
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // 입력값 검증
+            if (!username.trim() || !password.trim()) {
+                errorMessage.textContent = '사용자명과 비밀번호를 모두 입력해주세요.';
+                errorMessage.style.display = 'block';
+                return;
+            }
+            
+            // 로딩 상태
+            loginBtn.disabled = true;
+            loginBtn.textContent = '로그인 중...';
+            errorMessage.style.display = 'none';
+            
+            try {
+                console.log('로그인 시도:', { username });
+                
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        username: username, 
+                        password: password 
+                    })
+                });
+                
+                console.log('응답 상태:', response.status);
+                
+                if (!response.ok) {
+                    // 에러 응답 처리
+                    let errorData;
+                    try {
+                        errorData = await response.json();
+                    } catch {
+                        errorData = { message: `HTTP ${response.status} 오류가 발생했습니다.` };
+                    }
+                    throw new Error(errorData.message || '로그인에 실패했습니다.');
+                }
+                
+                const data = await response.json();
+                console.log('로그인 응답:', {
+                    userId: data.userId,
+                    username: data.username,
+                    fullName: data.fullName,
+                    hasToken: !!data.token,
+                    hasRefreshToken: !!data.refreshToken
+                });
+                
+                // 기존 DTO 구조에 맞춰 토큰 저장
+                localStorage.setItem('authToken', data.token);
+                localStorage.setItem('refreshToken', data.refreshToken);
+                localStorage.setItem('userId', data.userId);
+                localStorage.setItem('username', data.username);
+                localStorage.setItem('fullName', data.fullName);
+                localStorage.setItem('expiration', data.expiration);
+                localStorage.setItem('lastLogin', data.lastLogin);
+                
+                console.log('로컬 스토리지 저장 완료');
+                
+                // 성공 메시지 표시 후 리다이렉트
+                loginBtn.textContent = '로그인 성공! 이동 중...';
+                
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 500);
+                
+            } catch (error) {
+                console.error('로그인 오류:', error);
+                errorMessage.textContent = error.message;
+                errorMessage.style.display = 'block';
+            } finally {
+                if (loginBtn.textContent !== '로그인 성공! 이동 중...') {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = '로그인';
+                }
+            }
+        });
+
+        // 개발용: 엔터키로 폼 제출
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // 페이지 로드 시 사용자명 필드에 포커스
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('username').focus();
+        });
+    </script>
+</body>
+</html>
