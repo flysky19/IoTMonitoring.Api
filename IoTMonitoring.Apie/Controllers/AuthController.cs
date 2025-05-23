@@ -18,6 +18,7 @@ namespace IoTMonitoring.Api.Controllers
 
         public AuthController(IAuthService authService, ILogger<AuthController> logger)
         {
+
             _authService = authService;
             _logger = logger;
         }

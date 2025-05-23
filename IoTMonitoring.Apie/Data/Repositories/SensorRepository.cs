@@ -6,6 +6,8 @@ using Dapper;
 using IoTMonitoring.Api.Data.Connection;
 using IoTMonitoring.Api.Data.Models;
 using IoTMonitoring.Api.Data.Repositories.Interfaces;
+using IoTMonitoring.Api.DTOs;
+using Microsoft.EntityFrameworkCore;
 
 namespace IoTMonitoring.Api.Data.Repositories
 {
@@ -300,6 +302,147 @@ namespace IoTMonitoring.Api.Data.Repositories
                     new { SensorUUID = sensorUUID });
 
                 return count > 0;
+            }
+        }
+
+        /// <summary>
+        /// 센서 타입별 개수 조회 (그룹별 필터 옵션)
+        /// </summary>
+        public async Task<Dictionary<string, int>> GetCountBySensorTypeAsync(int? groupId = null)
+        {
+            using (var connection = await _connectionFactory.CreateConnectionAsync())
+            {
+                var whereClause = groupId.HasValue ? "WHERE GroupID = @GroupId" : "";
+                var sql = $@"
+            SELECT SensorType, COUNT(*) as Count
+            FROM Sensors 
+            {whereClause}
+            GROUP BY SensorType";
+
+                var parameters = groupId.HasValue ? new { GroupId = groupId.Value } : null;
+                var result = await connection.QueryAsync(sql, parameters);
+
+                return result.ToDictionary(
+                    row => (string)row.SensorType,
+                    row => (int)row.Count
+                );
+            }
+        }
+
+        public async Task<int> GetCountByGroupIdAsync(int groupId)
+        {
+            using (var connection = await _connectionFactory.CreateConnectionAsync())
+            {
+                const string sql = @"
+                    SELECT COUNT(*) 
+                    FROM Sensors 
+                    WHERE GroupID = @GroupId AND Status = 'active'";
+
+                return await connection.QuerySingleAsync<int>(sql, new { GroupId = groupId });
+            }
+        }
+
+        /// <summary>
+        /// 연결 상태별 센서 개수 조회 (그룹별 필터 옵션)
+        /// </summary>
+        public async Task<Dictionary<string, int>> GetCountByConnectionStatusAsync(int? groupId = null)
+        {
+            using (var connection = await _connectionFactory.CreateConnectionAsync())
+            {
+                var whereClause = groupId.HasValue ? "WHERE GroupID = @GroupId" : "";
+                var sql = $@"
+            SELECT ConnectionStatus, COUNT(*) as Count
+            FROM Sensors 
+            {whereClause}
+            GROUP BY ConnectionStatus";
+
+                var parameters = groupId.HasValue ? new { GroupId = groupId.Value } : null;
+                var result = await connection.QueryAsync(sql, parameters);
+
+                return result.ToDictionary(
+                    row => (string)row.ConnectionStatus,
+                    row => (int)row.Count
+                );
+            }
+        }
+
+        /// <summary>
+        /// 상태별 센서 개수 조회
+        /// </summary>
+        public async Task<Dictionary<string, int>> GetCountByStatusAsync()
+        {
+            using (var connection = await _connectionFactory.CreateConnectionAsync())
+            {
+                const string sql = @"
+            SELECT Status, COUNT(*) as Count
+            FROM Sensors 
+            GROUP BY Status";
+
+                var result = await connection.QueryAsync(sql);
+
+                return result.ToDictionary(
+                    row => (string)row.Status,
+                    row => (int)row.Count
+                );
+            }
+        }
+
+        /// <summary>
+        /// 그룹별 센서 목록 조회 (SensorDto 형태로)
+        /// </summary>
+        public async Task<IEnumerable<SensorDto>> GetByGroupIdAsDtoAsync(int groupId)
+        {
+            using (var connection = await _connectionFactory.CreateConnectionAsync())
+            {
+                const string sql = @"
+            SELECT s.SensorID, s.GroupID, s.SensorType, s.SensorUUID, s.Name, s.Model, 
+                   s.FirmwareVersion, s.Status, s.ConnectionStatus, s.LastCommunication, 
+                   s.LastHeartbeat, s.HeartbeatInterval, s.ConnectionTimeout, 
+                   s.InstallationDate, s.CreatedAt, s.UpdatedAt,
+                   sg.GroupName
+            FROM Sensors s
+            LEFT JOIN SensorGroups sg ON s.GroupID = sg.GroupID
+            WHERE s.GroupID = @GroupId
+            ORDER BY s.Name";
+
+                return await connection.QueryAsync<SensorDto>(sql, new { GroupId = groupId });
+            }
+        }
+
+        /// <summary>
+        /// 전체 센서 개수 조회
+        /// </summary>
+        public async Task<int> GetTotalCountAsync()
+        {
+            using (var connection = await _connectionFactory.CreateConnectionAsync())
+            {
+                return await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM Sensors");
+            }
+        }
+
+        /// <summary>
+        /// 활성 센서 개수 조회
+        /// </summary>
+        public async Task<int> GetActiveCountAsync()
+        {
+            using (var connection = await _connectionFactory.CreateConnectionAsync())
+            {
+                return await connection.QuerySingleAsync<int>(
+                    "SELECT COUNT(*) FROM Sensors WHERE Status = 'active'"
+                );
+            }
+        }
+
+        /// <summary>
+        /// 온라인 센서 개수 조회
+        /// </summary>
+        public async Task<int> GetOnlineCountAsync()
+        {
+            using (var connection = await _connectionFactory.CreateConnectionAsync())
+            {
+                return await connection.QuerySingleAsync<int>(
+                    "SELECT COUNT(*) FROM Sensors WHERE ConnectionStatus = 'online'"
+                );
             }
         }
     }

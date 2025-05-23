@@ -107,50 +107,6 @@ catch (Exception ex)
 builder.Services.AddSignalR();
 builder.Services.AddScoped<ISignalRService, SignalRService>();
 
-
-// JWT 설정 (app.Build() 이전에 위치해야 함!)
-//var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-//var secretKey = jwtSettings["SecretKey"];
-
-//if (string.IsNullOrEmpty(secretKey))
-//{
-//    throw new InvalidOperationException("JWT SecretKey가 설정되지 않았습니다.");
-//}
-
-//var key = Encoding.UTF8.GetBytes(secretKey);
-
-//builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-//    .AddJwtBearer(options =>
-//    {
-//        options.TokenValidationParameters = new TokenValidationParameters
-//        {
-//            ValidateIssuerSigningKey = true,
-//            IssuerSigningKey = new SymmetricSecurityKey(key),
-//            ValidateIssuer = true,
-//            ValidIssuer = jwtSettings["Issuer"],
-//            ValidateAudience = true,
-//            ValidAudience = jwtSettings["Audience"],
-//            ValidateLifetime = true,
-//            ClockSkew = TimeSpan.Zero
-//        };
-
-//        // SignalR을 위한 토큰 설정
-//        options.Events = new JwtBearerEvents
-//        {
-//            OnMessageReceived = context =>
-//            {
-//                var accessToken = context.Request.Query["access_token"];
-//                var path = context.HttpContext.Request.Path;
-//                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/sensorHub"))
-//                {
-//                    context.Token = accessToken;
-//                }
-//                return Task.CompletedTask;
-//            }
-//        };
-//    });
-
-
 var app = builder.Build();
 
 Console.WriteLine($"현재 환경: {app.Environment.EnvironmentName}");

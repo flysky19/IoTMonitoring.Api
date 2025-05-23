@@ -1,7 +1,10 @@
-﻿namespace IoTMonitoring.Api.Data.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace IoTMonitoring.Api.Data.Models
 {
     public class AlertHistory
     {
+        [Key]
         public long HistoryID { get; set; }
         public int? AlertID { get; set; }
         public int? SensorID { get; set; }

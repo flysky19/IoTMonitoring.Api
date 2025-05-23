@@ -1,4 +1,5 @@
 ﻿using IoTMonitoring.Api.Data.Models;
+using IoTMonitoring.Api.DTOs;
 
 namespace IoTMonitoring.Api.Data.Repositories.Interfaces
 {
@@ -20,11 +21,22 @@ namespace IoTMonitoring.Api.Data.Repositories.Interfaces
         Task<IEnumerable<Sensor>> GetByStatusAsync(string status);
         Task<IEnumerable<Sensor>> GetByConnectionStatusAsync(string connectionStatus);
 
+        Task<Dictionary<string, int>> GetCountBySensorTypeAsync(int? groupId = null);
+
         // 연결 상태 관리
         Task<bool> UpdateConnectionStatusAsync(int sensorId, string connectionStatus);
         Task<bool> UpdateHeartbeatAsync(int sensorId);
 
         // 유틸리티
         Task<bool> ExistsByUUIDAsync(string sensorUUID);
+
+        Task<int> GetCountByGroupIdAsync(int groupId);
+
+        Task<int> GetActiveCountAsync();
+        Task<int> GetTotalCountAsync();
+        Task<IEnumerable<SensorDto>> GetByGroupIdAsDtoAsync(int groupId);
+        Task<Dictionary<string, int>> GetCountByStatusAsync();
+        Task<Dictionary<string, int>> GetCountByConnectionStatusAsync(int? groupId = null);
+        
     }
 }

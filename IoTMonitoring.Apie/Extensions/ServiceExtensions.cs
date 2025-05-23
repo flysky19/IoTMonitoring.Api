@@ -22,6 +22,9 @@ using IoTMonitoring.Api.Mappers;
 using IoTMonitoring.Api.Services.MQTT.Interfaces;
 using IoTMonitoring.Api.Services.MQTT;
 using IoTMonitoring.Api.Data.DbContext;
+using IoTMonitoring.Api.Services.SensorGroup.Interfaces;
+using IoTMonitoring.Api.Services.SensorGroup;
+using Microsoft.EntityFrameworkCore;
 
 namespace IoTMonitoring.Api.Extensions
 {
@@ -71,6 +74,7 @@ namespace IoTMonitoring.Api.Extensions
                 // 센서 관련 리포지토리
                 services.AddScoped<ISensorRepository, SensorRepository>();
                 services.AddScoped<ISensorDataRepository, SensorDataRepository>();
+                services.AddScoped<ISensorGroupRepository, SensorGroupRepository>();
                 services.AddScoped<ISensorMqttTopicRepository, SensorMqttTopicRepository>();
                 services.AddScoped<ISensorConnectionHistoryRepository, SensorConnectionHistoryRepository>();
 
@@ -99,6 +103,7 @@ namespace IoTMonitoring.Api.Extensions
 
                 // 센서 관련 서비스 (간단한 구현 사용)
                 services.AddScoped<ISensorService, SensorService>();
+                services.AddScoped<ISensorGroupService, SensorGroupService>();
 
                 // MQTT 서비스
                 services.AddScoped<IMqttService, MqttService>();
@@ -123,6 +128,8 @@ namespace IoTMonitoring.Api.Extensions
                 Console.WriteLine("매퍼 서비스 등록 중...");
                 // 매퍼가 구현되면 주석 해제
                 services.AddScoped<ISensorMapper, SensorMapper>();
+                services.AddScoped<ISensorGroupMapper, SensorGroupMapper>();
+
                 Console.WriteLine("매퍼 서비스 등록 완료 (스킵)");
             }
             catch (Exception ex)
@@ -139,7 +146,11 @@ namespace IoTMonitoring.Api.Extensions
                 Console.WriteLine("데이터베이스 연결 팩토리 등록 중...");
 
                 services.AddSingleton<IDbConnectionFactory>(sp =>
-                    new SqlConnectionFactory(configuration.GetConnectionString("DefaultConnection")));
+                new SqlConnectionFactory(configuration.GetConnectionString("DefaultConnection")));
+
+                
+                //services.AddDbContext<ApplicationDbContext>(options =>
+                //options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
                 Console.WriteLine("데이터베이스 연결 팩토리 등록 완료");
             }

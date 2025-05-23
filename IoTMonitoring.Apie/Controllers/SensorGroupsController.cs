@@ -1,110 +1,174 @@
-﻿// Controllers/SensorGroupsController.cs
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using IoTMonitoring.Api.DTOs;
 using IoTMonitoring.Api.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using IoTMonitoring.Api.Services.SensorGroup.Interfaces;
 
 namespace IoTMonitoring.Api.Controllers
 {
-    [ApiController]
     [Route("api/sensor-groups")]
+    [ApiController]
+    [Authorize]
     public class SensorGroupsController : ControllerBase
     {
         private readonly ISensorGroupService _sensorGroupService;
+        private readonly ILogger<SensorGroupsController> _logger;
 
-        public SensorGroupsController(ISensorGroupService sensorGroupService)
+        public SensorGroupsController(ISensorGroupService sensorGroupService, ILogger<SensorGroupsController> logger)
         {
             _sensorGroupService = sensorGroupService;
+            _logger = logger;
         }
 
-        // 모든 센서 그룹 조회
+        /// <summary>
+        /// 센서 그룹 목록 조회
+        /// </summary>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<SensorGroupDto>>> GetSensorGroups(
-            [FromQuery] int? companyId = null,
-            [FromQuery] bool includeInactive = false)
+        public async Task<ActionResult<IEnumerable<SensorGroupDto>>> GetAllSensorGroups([FromQuery] int? companyId = null)
         {
-            var groups = await _sensorGroupService.GetAllGroupsAsync(companyId, includeInactive);
-            return Ok(groups);
+            try
+            {
+                _logger.LogInformation($"센서 그룹 목록 조회 요청 - CompanyId: {companyId}");
+
+                var groups = await _sensorGroupService.GetAllSensorGroupsAsync(companyId);
+
+                _logger.LogInformation($"센서 그룹 목록 조회 완료 - 조회된 그룹 수: {groups?.Count() ?? 0}");
+
+                return Ok(groups);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"센서 그룹 목록 조회 중 오류: {ex.Message}");
+                return StatusCode(500, new { message = "센서 그룹 목록 조회 중 오류가 발생했습니다." });
+            }
         }
 
-        // 센서 그룹 상세 조회
+        /// <summary>
+        /// 센서 그룹 상세 조회
+        /// </summary>
         [HttpGet("{id}")]
         public async Task<ActionResult<SensorGroupDetailDto>> GetSensorGroup(int id)
         {
-            var group = await _sensorGroupService.GetGroupByIdAsync(id);
-            if (group == null)
-                return NotFound();
+            try
+            {
+                _logger.LogInformation($"센서 그룹 상세 조회 요청 - ID: {id}");
 
-            return Ok(group);
+                var group = await _sensorGroupService.GetSensorGroupDetailAsync(id);
+
+                _logger.LogInformation($"센서 그룹 상세 조회 완료 - ID: {id}, Name: {group.GroupName}");
+                return Ok(group);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning($"센서 그룹을 찾을 수 없음 - ID: {id}, Message: {ex.Message}");
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"센서 그룹 조회 중 오류 (ID: {id}): {ex.Message}", ex);
+                return StatusCode(500, new { message = "센서 그룹 조회 중 오류가 발생했습니다." });
+            }
         }
 
-        // 센서 그룹 생성
+        /// <summary>
+        /// 새 센서 그룹 생성
+        /// </summary>
         [HttpPost]
-        public async Task<ActionResult<SensorGroupDto>> CreateSensorGroup([FromBody] SensorGroupCreateDto groupDto)
+        public async Task<ActionResult<SensorGroupDetailDto>> CreateSensorGroup([FromBody] SensorGroupCreateDto request)
         {
             try
             {
-                var createdGroup = await _sensorGroupService.CreateGroupAsync(groupDto);
-                return CreatedAtAction(nameof(GetSensorGroup), new { id = createdGroup.GroupID }, createdGroup);
+                _logger.LogInformation($"센서 그룹 생성 요청 - Name: {request.GroupName}");
+
+                var group = await _sensorGroupService.CreateSensorGroupAsync(request);
+
+                _logger.LogInformation($"센서 그룹 생성 완료 - ID: {group.GroupID}, Name: {group.GroupName}");
+                return CreatedAtAction(nameof(GetSensorGroup), new { id = group.GroupID }, group);
             }
-            catch (KeyNotFoundException ex)
+            catch (InvalidOperationException ex)
             {
-                return NotFound(ex.Message);
+                _logger.LogWarning($"센서 그룹 생성 실패 - Name: {request.GroupName}, Message: {ex.Message}");
+                return BadRequest(new { message = ex.Message });
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                _logger.LogError($"센서 그룹 생성 중 오류: {ex.Message}", ex);
+                return StatusCode(500, new { message = "센서 그룹 생성 중 오류가 발생했습니다." });
             }
         }
 
-        // 센서 그룹 수정
+        /// <summary>
+        /// 센서 그룹 수정
+        /// </summary>
         [HttpPut("{id}")]
-        public async Task<ActionResult> UpdateSensorGroup(int id, [FromBody] SensorGroupUpdateDto groupDto)
+        public async Task<ActionResult<SensorGroupDetailDto>> UpdateSensorGroup(int id, [FromBody] SensorGroupUpdateDto request)
         {
             try
             {
-                await _sensorGroupService.UpdateGroupAsync(id, groupDto);
-                return NoContent();
+                _logger.LogInformation($"센서 그룹 수정 요청 - ID: {id}");
+
+                var group = await _sensorGroupService.UpdateSensorGroupAsync(id, request);
+
+                _logger.LogInformation($"센서 그룹 수정 완료 - ID: {id}");
+                return Ok(group);
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(ex.Message);
+                _logger.LogWarning($"센서 그룹을 찾을 수 없음 - ID: {id}, Message: {ex.Message}");
+                return NotFound(new { message = ex.Message });
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                _logger.LogError($"센서 그룹 수정 중 오류 (ID: {id}): {ex.Message}");
+                return StatusCode(500, new { message = "센서 그룹 수정 중 오류가 발생했습니다." });
             }
         }
 
-        // 센서 그룹 비활성화
+        /// <summary>
+        /// 센서 그룹 삭제
+        /// </summary>
         [HttpDelete("{id}")]
-        public async Task<ActionResult> DeactivateSensorGroup(int id)
+        public async Task<ActionResult> DeleteSensorGroup(int id)
         {
             try
             {
-                await _sensorGroupService.DeactivateGroupAsync(id);
+                await _sensorGroupService.DeleteSensorGroupAsync(id);
                 return NoContent();
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(ex.Message);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"센서 그룹 삭제 중 오류 (ID: {id}): {ex.Message}");
+                return StatusCode(500, new { message = "센서 그룹 삭제 중 오류가 발생했습니다." });
             }
         }
 
-        // 센서 그룹의 센서 목록 조회
+        /// <summary>
+        /// 그룹 내 센서 목록 조회
+        /// </summary>
         [HttpGet("{id}/sensors")]
-        public async Task<ActionResult<IEnumerable<SensorDto>>> GetGroupSensors(
-            int id,
-            [FromQuery] string sensorType = null,
-            [FromQuery] string status = null)
+        public async Task<ActionResult<IEnumerable<SensorDto>>> GetGroupSensors(int id)
         {
             try
             {
-                var sensors = await _sensorGroupService.GetGroupSensorsAsync(id, sensorType, status);
+                var sensors = await _sensorGroupService.GetGroupSensorsAsync(id);
                 return Ok(sensors);
             }
             catch (KeyNotFoundException ex)
             {
-                return NotFound(ex.Message);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"그룹 센서 목록 조회 중 오류 (ID: {id}): {ex.Message}");
+                return StatusCode(500, new { message = "그룹 센서 목록 조회 중 오류가 발생했습니다." });
             }
         }
     }
