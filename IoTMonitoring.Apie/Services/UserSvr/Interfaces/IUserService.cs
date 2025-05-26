@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace IoTMonitoring.Api.Services.Interfaces
+namespace IoTMonitoring.Api.Services.UserSvr.Interfaces
 {
     public interface IUserService
     {

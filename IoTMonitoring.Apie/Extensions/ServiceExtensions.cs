@@ -25,6 +25,8 @@ using IoTMonitoring.Api.Data.DbContext;
 using IoTMonitoring.Api.Services.SensorGroup.Interfaces;
 using IoTMonitoring.Api.Services.SensorGroup;
 using Microsoft.EntityFrameworkCore;
+using IoTMonitoring.Api.Services.UserSvr.Interfaces;
+using IoTMonitoring.Api.Services.UserSvr;
 
 namespace IoTMonitoring.Api.Extensions
 {
@@ -100,6 +102,8 @@ namespace IoTMonitoring.Api.Extensions
                 services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
                 services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
                 services.AddScoped<IAuthService, AuthService>();
+
+                services.AddScoped<IUserService, UserService>();
 
                 // 센서 관련 서비스 (간단한 구현 사용)
                 services.AddScoped<ISensorService, SensorService>();

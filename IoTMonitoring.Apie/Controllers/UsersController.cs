@@ -2,8 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using IoTMonitoring.Api.DTOs;
-using IoTMonitoring.Api.Services.Interfaces;
 using System.Security.Claims;
+using IoTMonitoring.Api.Services.UserSvr.Interfaces;
 
 namespace IoTMonitoring.Api.Controllers
 {

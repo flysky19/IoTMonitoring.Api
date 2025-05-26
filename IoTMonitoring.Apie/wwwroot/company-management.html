@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회사 관리 - IoT 모니터링</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f6fa;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-3px);
+        }
+        
+        /* 통계 카드 스타일 */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: all 0.3s;
+            border-top: 4px solid transparent;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+        
+        .stat-card.total {
+            border-top-color: #667eea;
+        }
+        
+        .stat-card.active {
+            border-top-color: #28a745;
+        }
+        
+        .stat-card.inactive {
+            border-top-color: #dc3545;
+        }
+        
+        .stat-card.sensors {
+            border-top-color: #17a2b8;
+        }
+        
+        .stat-card.users {
+            border-top-color: #ffc107;
+        }
+        
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.8;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        /* 컨트롤 패널 */
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+            max-width: 400px;
+        }
+        
+        .search-box input {
+            flex: 1;
+            padding: 0.5rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background-color: #007bff;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+        
+        .btn:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+        
+        .btn.success {
+            background-color: #28a745;
+        }
+        
+        .btn.success:hover {
+            background-color: #218838;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn.danger {
+            background-color: #dc3545;
+        }
+        
+        .btn.danger:hover {
+            background-color: #c82333;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+        }
+        
+        .btn.secondary {
+            background-color: #6c757d;
+        }
+        
+        .btn.secondary:hover {
+            background-color: #545b62;
+            box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+        }
+        
+        .btn.warning {
+            background-color: #ffc107;
+            color: #333;
+        }
+        
+        .btn.warning:hover {
+            background-color: #e0a800;
+            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.85rem;
+        }
+        
+        /* 회사 그리드 스타일 */
+        .company-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .company-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .company-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .company-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 1.5rem;
+            border-bottom: 2px solid #dee2e6;
+            position: relative;
+        }
+        
+        .company-logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+            font-weight: bold;
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+        }
+        
+        .company-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 0.5rem;
+            padding-right: 80px;
+        }
+        
+        .company-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .status-badge.active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-badge.inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .company-body {
+            padding: 1.5rem;
+        }
+        
+        .info-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .info-section h3 {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+            font-size: 0.9rem;
+        }
+        
+        .info-label {
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .info-value {
+            color: #333;
+            text-align: right;
+        }
+        
+        .sensor-stats {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        
+        .sensor-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+        
+        .sensor-stat {
+            text-align: center;
+        }
+        
+        .sensor-stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .sensor-stat-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .sensor-types {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .sensor-type-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.3rem 0.6rem;
+            background: #e9ecef;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            color: #495057;
+        }
+        
+        .sensor-type-tag.particle {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        
+        .sensor-type-tag.temp_humidity {
+            background: #f3e5f5;
+            color: #6a1b9a;
+        }
+        
+        .sensor-type-tag.wind {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .sensor-type-tag.speaker {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        
+        .company-footer {
+            padding: 1rem 1.5rem;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: space-between;
+        }
+        
+        .footer-info {
+            font-size: 0.8rem;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .footer-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 3% auto;
+            padding: 0;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+            animation: slideIn 0.3s;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        
+        .close {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: white;
+            background: none;
+            border: none;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+        
+        .close:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .modal-body {
+            padding: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .form-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid #eee;
+        }
+        
+        .form-section h3 {
+            margin-bottom: 1rem;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            border: 1px solid #f5c6cb;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            border: 1px solid #c3e6cb;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #666;
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-box {
+                max-width: none;
+            }
+            
+            .company-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                margin: 5% auto;
+                width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏢 회사 관리</h1>
+        <button class="back-btn" onclick="goBack()">
+            ← 대시보드로 돌아가기
+        </button>
+    </div>
+    
+    <div class="stats-container">
+        <div class="stat-card total">
+            <div class="stat-icon">🏢</div>
+            <div class="stat-value" id="totalCompanies">0</div>
+            <div class="stat-label">전체 회사</div>
+        </div>
+        <div class="stat-card active">
+            <div class="stat-icon">✅</div>
+            <div class="stat-value" id="activeCompanies">0</div>
+            <div class="stat-label">활성 회사</div>
+        </div>
+        <div class="stat-card inactive">
+            <div class="stat-icon">❌</div>
+            <div class="stat-value" id="inactiveCompanies">0</div>
+            <div class="stat-label">비활성 회사</div>
+        </div>
+        <div class="stat-card sensors">
+            <div class="stat-icon">📡</div>
+            <div class="stat-value" id="totalSensors">0</div>
+            <div class="stat-label">전체 센서</div>
+        </div>
+        <div class="stat-card users">
+            <div class="stat-icon">👥</div>
+            <div class="stat-value" id="totalUsers">0</div>
+            <div class="stat-label">배정된 사용자</div>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="회사명, 담당자로 검색..." />
+            <button class="btn" onclick="searchCompanies()">🔍 검색</button>
+        </div>
+        <div>
+            <button class="btn success" onclick="openAddCompanyModal()">➕ 새 회사 추가</button>
+            <button class="btn secondary" onclick="refreshCompanies()">🔄 새로고침</button>
+            <button class="btn warning" onclick="exportCompanies()">📥 내보내기</button>
+        </div>
+    </div>
+    
+    <div id="messageArea"></div>
+    
+    <div class="company-grid" id="companyGrid">
+        <div class="loading">
+            <div class="loading-spinner"></div>
+            <div>회사 목록을 불러오는 중...</div>
+        </div>
+    </div>
+    
+    <!-- 회사 추가/수정 모달 -->
+    <div id="companyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">새 회사 추가</h2>
+                <button class="close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="companyForm">
+                    <input type="hidden" id="companyId" />
+                    
+                    <div class="form-group">
+                        <label for="companyName">회사명 *</label>
+                        <input type="text" id="companyName" required placeholder="예: ABC 주식회사" />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="businessNumber">사업자등록번호</label>
+                        <input type="text" id="businessNumber" placeholder="000-00-00000" />
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="industry">업종</label>
+                            <input type="text" id="industry" placeholder="예: 제조업" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="active">활성 상태</label>
+                            <select id="active">
+                                <option value="true">활성</option>
+                                <option value="false">비활성</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="address">주소</label>
+                        <input type="text" id="address" placeholder="예: 서울시 강남구 테헤란로 123" />
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>📞 담당자 정보</h3>
+                        
+                        <div class="form-group">
+                            <label for="contactPerson">담당자 이름</label>
+                            <input type="text" id="contactPerson" placeholder="예: 홍길동" />
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="contactPhone">담당자 연락처</label>
+                                <input type="tel" id="contactPhone" placeholder="010-0000-0000" />
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="contactEmail">담당자 이메일</label>
+                                <input type="email" id="contactEmail" placeholder="example@company.com" />
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="contactDepartment">담당자 부서</label>
+                            <input type="text" id="contactDepartment" placeholder="예: IT팀" />
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="notes">메모</label>
+                        <textarea id="notes" rows="3" placeholder="추가 정보나 특이사항을 입력하세요..."></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn secondary" onclick="closeModal()">취소</button>
+                        <button type="submit" class="btn">저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let companies = [];
+        let filteredCompanies = [];
+        let editingCompanyId = null;
+        let sensorGroups = [];
+        let users = [];
+        
+        // 인증 토큰 가져오기
+        function getAuthToken() {
+            return localStorage.getItem('authToken');
+        }
+        
+        // 대시보드로 돌아가기
+        function goBack() {
+            window.location.href = '/dashboard.html';
+        }ddddddd
+        
+        // API 요청 헬퍼
+        async function apiRequest(url, options = {}) {
+            const token = getAuthToken();
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            const defaultOptions = {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            };
+            
+            const response = await fetch(url, { ...defaultOptions, ...options });
+            
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(error || `HTTP error! status: ${response.status}`);
+            }
+            
+            return response.json();
+        }
+        
+        // 메시지 표시
+        function showMessage(message, type = 'error') {
+            const messageArea = document.getElementById('messageArea');
+            const icon = type === 'success' ? '✓' : '✗';
+            messageArea.innerHTML = `<div class="${type}">${icon} ${message}</div>`;
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+        
+        // 회사 목록 불러오기
+        async function loadCompanies() {
+            try {
+                companies = await apiRequest('/api/companies?includeInactive=true');
+                sensorGroups = await apiRequest('/api/sensor-groups');
+                users = await apiRequest('/api/users');
+                filteredCompanies = companies;
+                updateStatistics();
+                renderCompanies();
+            } catch (error) {
+                showMessage('회사 목록을 불러오는데 실패했습니다: ' + error.message);
+            }
+        }
+        
+        // 통계 업데이트
+        function updateStatistics() {
+            const totalCompanies = companies.length;
+            const activeCompanies = companies.filter(c => c.active).length;
+            const inactiveCompanies = companies.filter(c => !c.active).length;
+            
+            // 센서 그룹별 센서 수 계산
+            let totalSensors = 0;
+            sensorGroups.forEach(group => {
+                totalSensors += group.sensorCount || 0;
+            });
+            
+            // 회사별 배정된 사용자 수 계산
+            const usersWithCompany = new Set();
+            users.forEach(user => {
+                if (user.assignedCompanies && user.assignedCompanies.length > 0) {
+                    usersWithCompany.add(user.userId);
+                }
+            });
+            
+            document.getElementById('totalCompanies').textContent = totalCompanies;
+            document.getElementById('activeCompanies').textContent = activeCompanies;
+            document.getElementById('inactiveCompanies').textContent = inactiveCompanies;
+            document.getElementById('totalSensors').textContent = totalSensors;
+            document.getElementById('totalUsers').textContent = usersWithCompany.size;
+        }
+        
+        // 회사별 센서 정보 가져오기
+        function getCompanySensorInfo(companyId) {
+            const companyGroups = sensorGroups.filter(g => g.companyId === companyId);
+            let totalSensors = 0;
+            const sensorTypes = {};
+            
+            companyGroups.forEach(group => {
+                totalSensors += group.sensorCount || 0;
+                // 실제로는 각 그룹의 센서 타입별 수량을 API에서 받아와야 하지만,
+                // 여기서는 간단히 표시
+                if (group.sensorCount > 0) {
+                    sensorTypes[group.groupName] = group.sensorCount;
+                }
+            });
+            
+            return { totalSensors, sensorTypes, groupCount: companyGroups.length };
+        }
+        
+        // 회사별 사용자 수 가져오기
+        function getCompanyUserCount(companyId) {
+            return users.filter(user => 
+                user.assignedCompanies && 
+                user.assignedCompanies.some(c => c.companyId === companyId)
+            ).length;
+        }
+        
+        // 회사 이니셜 가져오기
+        function getCompanyInitials(companyName) {
+            return companyName.split(' ')
+                .map(word => word[0])
+                .join('')
+                .toUpperCase()
+                .slice(0, 2);
+        }
+        
+        // 센서 타입 아이콘 가져오기
+        function getSensorIcon(type) {
+            const icons = {
+                'particle': '💨',
+                'temp_humidity': '🌡️',
+                'wind': '🌪️',
+                'speaker': '🔊'
+            };
+            return icons[type] || '📡';
+        }
+        
+        // 회사 검색
+        function searchCompanies() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            filteredCompanies = companies.filter(company => {
+                return company.companyName.toLowerCase().includes(searchTerm) ||
+                    (company.contactPerson && company.contactPerson.toLowerCase().includes(searchTerm)) ||
+                    (company.address && company.address.toLowerCase().includes(searchTerm));
+            });
+            
+            renderCompanies();
+        }
+        
+        // 회사 카드 렌더링
+        function renderCompanies() {
+            const grid = document.getElementById('companyGrid');
+            
+            if (filteredCompanies.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🏢</div>
+                        <div>등록된 회사가 없습니다.</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = '';
+            
+            filteredCompanies.forEach(company => {
+                const sensorInfo = getCompanySensorInfo(company.companyId);
+                const userCount = getCompanyUserCount(company.companyId);
+                const initials = getCompanyInitials(company.companyName);
+                const createdDate = company.createdAt ? new Date(company.createdAt).toLocaleDateString('ko-KR') : '-';
+                
+                const card = document.createElement('div');
+                card.className = 'company-card';
+                
+                card.innerHTML = `
+                    <div class="company-header">
+                        <div class="company-logo">${initials}</div>
+                        <div class="company-title">${company.companyName}</div>
+                        <div class="company-status">
+                            <span class="status-badge ${company.active ? 'active' : 'inactive'}">
+                                ${company.active ? '활성' : '비활성'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="company-body">
+                        <div class="info-section">
+                            <h3>📋 기본 정보</h3>
+                            <div class="info-row">
+                                <span class="info-label">주소</span>
+                                <span class="info-value">${company.address || '-'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">사업자등록번호</span>
+                                <span class="info-value">${company.businessNumber || '-'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">업종</span>
+                                <span class="info-value">${company.industry || '-'}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="info-section">
+                            <h3>👤 담당자 정보</h3>
+                            <div class="info-row">
+                                <span class="info-label">담당자</span>
+                                <span class="info-value">${company.contactPerson || '-'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">연락처</span>
+                                <span class="info-value">${company.contactPhone || '-'}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">이메일</span>
+                                <span class="info-value">${company.contactEmail || '-'}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="sensor-stats">
+                            <h3>📊 센서 현황</h3>
+                            <div class="sensor-stats-grid">
+                                <div class="sensor-stat">
+                                    <div class="sensor-stat-value">${sensorInfo.totalSensors}</div>
+                                    <div class="sensor-stat-label">전체 센서</div>
+                                </div>
+                                <div class="sensor-stat">
+                                    <div class="sensor-stat-value">${sensorInfo.groupCount}</div>
+                                    <div class="sensor-stat-label">센서 그룹</div>
+                                </div>
+                                <div class="sensor-stat">
+                                    <div class="sensor-stat-value">${userCount}</div>
+                                    <div class="sensor-stat-label">배정 사용자</div>
+                                </div>
+                                <div class="sensor-stat">
+                                    <div class="sensor-stat-value">0</div>
+                                    <div class="sensor-stat-label">알림 설정</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="company-footer">
+                        <div class="footer-info">
+                            📅 등록일: ${createdDate}
+                        </div>
+                        <div class="footer-actions">
+                            <button class="btn btn-sm" onclick="editCompany(${company.companyId})">수정</button>
+                            <button class="btn btn-sm danger" onclick="deleteCompany(${company.companyId})">삭제</button>
+                        </div>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+        
+        // 모달 열기
+        function openAddCompanyModal() {
+            editingCompanyId = null;
+            document.getElementById('modalTitle').textContent = '새 회사 추가';
+            document.getElementById('companyForm').reset();
+            document.getElementById('companyModal').style.display = 'block';
+        }
+        
+        // 회사 수정
+        async function editCompany(companyId) {
+            try {
+                const company = await apiRequest(`/api/companies/${companyId}`);
+                editingCompanyId = companyId;
+                
+                document.getElementById('modalTitle').textContent = '회사 정보 수정';
+                document.getElementById('companyId').value = companyId;
+                document.getElementById('companyName').value = company.companyName;
+                document.getElementById('businessNumber').value = company.businessNumber || '';
+                document.getElementById('industry').value = company.industry || '';
+                document.getElementById('address').value = company.address || '';
+                document.getElementById('contactPerson').value = company.contactPerson || '';
+                document.getElementById('contactPhone').value = company.contactPhone || '';
+                document.getElementById('contactEmail').value = company.contactEmail || '';
+                document.getElementById('contactDepartment').value = company.contactDepartment || '';
+                document.getElementById('notes').value = company.notes || '';
+                document.getElementById('active').value = company.active.toString();
+                
+                document.getElementById('companyModal').style.display = 'block';
+            } catch (error) {
+                showMessage('회사 정보를 불러오는데 실패했습니다: ' + error.message);
+            }
+        }
+        
+        // 회사 삭제
+        async function deleteCompany(companyId) {
+            const company = companies.find(c => c.companyId === companyId);
+            const sensorInfo = getCompanySensorInfo(companyId);
+            
+            let confirmMessage = `정말로 "${company.companyName}" 회사를 삭제하시겠습니까?`;
+            if (sensorInfo.totalSensors > 0) {
+                confirmMessage += `\n\n⚠️ 주의: 이 회사에는 ${sensorInfo.totalSensors}개의 센서가 연결되어 있습니다.`;
+            }
+            
+            if (!confirm(confirmMessage)) return;
+            
+            try {
+                await apiRequest(`/api/companies/${companyId}`, { method: 'DELETE' });
+                showMessage('회사가 삭제되었습니다.', 'success');
+                loadCompanies();
+            } catch (error) {
+                showMessage('회사 삭제에 실패했습니다: ' + error.message);
+            }
+        }
+        
+        // 모달 닫기
+        function closeModal() {
+            document.getElementById('companyModal').style.display = 'none';
+            document.getElementById('companyForm').reset();
+            editingCompanyId = null;
+        }
+        
+        // 폼 제출
+        document.getElementById('companyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const companyData = {
+                companyName: document.getElementById('companyName').value,
+                businessNumber: document.getElementById('businessNumber').value,
+                industry: document.getElementById('industry').value,
+                address: document.getElementById('address').value,
+                contactPerson: document.getElementById('contactPerson').value,
+                contactPhone: document.getElementById('contactPhone').value,
+                contactEmail: document.getElementById('contactEmail').value,
+                contactDepartment: document.getElementById('contactDepartment').value,
+                notes: document.getElementById('notes').value,
+                active: document.getElementById('active').value === 'true'
+            };
+            
+            try {
+                if (editingCompanyId) {
+                    // 수정
+                    await apiRequest(`/api/companies/${editingCompanyId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(companyData)
+                    });
+                    showMessage('회사 정보가 수정되었습니다.', 'success');
+                } else {
+                    // 추가
+                    await apiRequest('/api/companies', {
+                        method: 'POST',
+                        body: JSON.stringify(companyData)
+                    });
+                    showMessage('새 회사가 추가되었습니다.', 'success');
+                }
+                
+                closeModal();
+                loadCompanies();
+            } catch (error) {
+                showMessage('저장에 실패했습니다: ' + error.message);
+            }
+        });
+        
+        // 새로고침
+        function refreshCompanies() {
+            document.getElementById('searchInput').value = '';
+            loadCompanies();
+        }
+        
+        // 회사 목록 내보내기
+        function exportCompanies() {
+            const csvContent = [
+                ['회사명', '상태', '주소', '사업자등록번호', '업종', '담당자', '연락처', '이메일', '센서수', '사용자수', '등록일'],
+                ...filteredCompanies.map(company => {
+                    const sensorInfo = getCompanySensorInfo(company.companyId);
+                    const userCount = getCompanyUserCount(company.companyId);
+                    
+                    return [
+                        company.companyName,
+                        company.active ? '활성' : '비활성',
+                        company.address || '',
+                        company.businessNumber || '',
+                        company.industry || '',
+                        company.contactPerson || '',
+                        company.contactPhone || '',
+                        company.contactEmail || '',
+                        sensorInfo.totalSensors,
+                        userCount,
+                        company.createdAt ? new Date(company.createdAt).toLocaleDateString('ko-KR') : ''
+                    ];
+                })
+            ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+            
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `companies_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.click();
+        }
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCompanies();
+            
+            // 엔터키로 검색
+            document.getElementById('searchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    searchCompanies();
+                }
+            });
+        });
+        
+        // 모달 외부 클릭 시 닫기
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('companyModal')) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>센서 관리 - IoT 모니터링</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f6fa;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-3px);
+        }
+        
+        /* 통계 카드 스타일 */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+        
+        .stat-card.total {
+            border-left-color: #667eea;
+        }
+        
+        .stat-card.active {
+            border-left-color: #28a745;
+        }
+        
+        .stat-card.online {
+            border-left-color: #3498db;
+        }
+        
+        .stat-card.offline {
+            border-left-color: #dc3545;
+        }
+        
+        .stat-card.unregistered {
+            border-left-color: #ffc107;
+        }
+        
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.8;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        /* 센서 타입별 통계 스타일 */
+        .type-stats-container {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .type-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+        
+        .type-stat-card {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        
+        .type-stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .type-stat-card.particle {
+            border-color: #e3f2fd;
+        }
+        
+        .type-stat-card.particle:hover {
+            background: #e3f2fd;
+        }
+        
+        .type-stat-card.temp_humidity {
+            border-color: #f3e5f5;
+        }
+        
+        .type-stat-card.temp_humidity:hover {
+            background: #f3e5f5;
+        }
+        
+        .type-stat-card.wind {
+            border-color: #e8f5e9;
+        }
+        
+        .type-stat-card.wind:hover {
+            background: #e8f5e9;
+        }
+        
+        .type-stat-card.speaker {
+            border-color: #fff3e0;
+        }
+        
+        .type-stat-card.speaker:hover {
+            background: #fff3e0;
+        }
+        
+        .type-stat-icon {
+            font-size: 2.5rem;
+            opacity: 0.8;
+        }
+        
+        .type-stat-info {
+            flex: 1;
+        }
+        
+        .type-stat-name {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+        }
+        
+        .type-stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .type-stat-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.1);
+        }
+        
+        .type-stat-fill {
+            height: 100%;
+            background: #667eea;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+        
+        .type-stat-card.particle .type-stat-fill {
+            background: #1565c0;
+        }
+        
+        .type-stat-card.temp_humidity .type-stat-fill {
+            background: #6a1b9a;
+        }
+        
+        .type-stat-card.wind .type-stat-fill {
+            background: #2e7d32;
+        }
+        
+        .type-stat-card.speaker .type-stat-fill {
+            background: #e65100;
+        }
+        
+        /* 컨트롤 패널 */
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .control-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+        
+        .control-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+            max-width: 400px;
+        }
+        
+        .search-box input {
+            flex: 1;
+            padding: 0.5rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .filter-group label {
+            font-weight: 500;
+            color: #333;
+            font-size: 0.9rem;
+        }
+        
+        .filter-group select {
+            padding: 0.5rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            background: white;
+        }
+        
+        .filter-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background-color: #007bff;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+        
+        .btn:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+        
+        .btn.success {
+            background-color: #28a745;
+        }
+        
+        .btn.success:hover {
+            background-color: #218838;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn.danger {
+            background-color: #dc3545;
+        }
+        
+        .btn.danger:hover {
+            background-color: #c82333;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+        }
+        
+        .btn.secondary {
+            background-color: #6c757d;
+        }
+        
+        .btn.secondary:hover {
+            background-color: #545b62;
+            box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+        }
+        
+        .btn.warning {
+            background-color: #ffc107;
+            color: #333;
+        }
+        
+        .btn.warning:hover {
+            background-color: #e0a800;
+            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+        }
+        
+        .btn-sm {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.85rem;
+        }
+        
+        /* 테이블 스타일 */
+        .sensor-table-container {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .table-header {
+            padding: 1rem 1.5rem;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1200px;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+        
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* 센서 정보 표시 */
+        .sensor-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .sensor-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        .sensor-icon.particle {
+            background: #e3f2fd;
+        }
+        
+        .sensor-icon.temp_humidity {
+            background: #f3e5f5;
+        }
+        
+        .sensor-icon.wind {
+            background: #e8f5e9;
+        }
+        
+        .sensor-icon.speaker {
+            background: #fff3e0;
+        }
+        
+        .sensor-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sensor-name {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .sensor-uuid {
+            font-size: 0.85rem;
+            color: #666;
+            font-family: monospace;
+        }
+        
+        /* 배지 스타일 */
+        .sensor-type-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .sensor-type-badge.particle {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+        
+        .sensor-type-badge.temp_humidity {
+            background-color: #f3e5f5;
+            color: #6a1b9a;
+        }
+        
+        .sensor-type-badge.wind {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .sensor-type-badge.speaker {
+            background-color: #fff3e0;
+            color: #e65100;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .status-badge.active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-badge.inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-badge.maintenance {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .connection-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .connection-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .connection-badge.online {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .connection-badge.online .connection-indicator {
+            background-color: #28a745;
+        }
+        
+        .connection-badge.offline {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .connection-badge.offline .connection-indicator {
+            background-color: #dc3545;
+            animation: none;
+        }
+        
+        .connection-badge.unknown {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+        
+        .connection-badge.unknown .connection-indicator {
+            background-color: #6c757d;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .company-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .company-name {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .group-name {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .no-company {
+            color: #dc3545;
+            font-style: italic;
+        }
+        
+        .last-comm {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .last-comm-time {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .last-comm-ago {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 3% auto;
+            padding: 0;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 700px;
+            position: relative;
+            animation: slideIn 0.3s;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        
+        .close {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: white;
+            background: none;
+            border: none;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+        
+        .close:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .modal-body {
+            padding: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .form-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid #eee;
+        }
+        
+        .form-section h3 {
+            margin-bottom: 1rem;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #667eea;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            border: 1px solid #f5c6cb;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            border: 1px solid #c3e6cb;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #666;
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1.5rem;
+            background-color: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .page-btn {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #dee2e6;
+            background: white;
+            color: #333;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .page-btn:hover:not(:disabled) {
+            background-color: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .page-btn.active {
+            background-color: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .control-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-box {
+                max-width: none;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                margin: 5% auto;
+                width: 95%;
+            }
+            
+            table {
+                font-size: 0.85rem;
+            }
+            
+            td, th {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📡 센서 관리</h1>
+        <button class="back-btn" onclick="goBack()">
+            ← 대시보드로 돌아가기
+        </button>
+    </div>
+    
+    <div class="stats-container">
+        <div class="stat-card total">
+            <div class="stat-icon">📊</div>
+            <div class="stat-value" id="totalSensors">0</div>
+            <div class="stat-label">전체 센서</div>
+        </div>
+        <div class="stat-card active">
+            <div class="stat-icon">✅</div>
+            <div class="stat-value" id="activeSensors">0</div>
+            <div class="stat-label">활성 센서</div>
+        </div>
+        <div class="stat-card online">
+            <div class="stat-icon">🟢</div>
+            <div class="stat-value" id="onlineSensors">0</div>
+            <div class="stat-label">온라인</div>
+        </div>
+        <div class="stat-card offline">
+            <div class="stat-icon">🔴</div>
+            <div class="stat-value" id="offlineSensors">0</div>
+            <div class="stat-label">오프라인</div>
+        </div>
+        <div class="stat-card unregistered">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-value" id="unregisteredSensors">0</div>
+            <div class="stat-label">미등록</div>
+        </div>
+    </div>
+    
+    <!-- 센서 타입별 통계 -->
+    <div class="type-stats-container">
+        <h3 style="margin: 0 0 1rem 0; color: #333;">📈 센서 종류별 현황</h3>
+        <div class="type-stats-grid">
+            <div class="type-stat-card particle">
+                <div class="type-stat-icon">💨</div>
+                <div class="type-stat-info">
+                    <div class="type-stat-name">미세먼지</div>
+                    <div class="type-stat-value" id="particleCount">0</div>
+                </div>
+                <div class="type-stat-bar">
+                    <div class="type-stat-fill" id="particleBar"></div>
+                </div>
+            </div>
+            <div class="type-stat-card temp_humidity">
+                <div class="type-stat-icon">🌡️</div>
+                <div class="type-stat-info">
+                    <div class="type-stat-name">온습도</div>
+                    <div class="type-stat-value" id="tempHumidityCount">0</div>
+                </div>
+                <div class="type-stat-bar">
+                    <div class="type-stat-fill" id="tempHumidityBar"></div>
+                </div>
+            </div>
+            <div class="type-stat-card wind">
+                <div class="type-stat-icon">🌪️</div>
+                <div class="type-stat-info">
+                    <div class="type-stat-name">풍향</div>
+                    <div class="type-stat-value" id="windCount">0</div>
+                </div>
+                <div class="type-stat-bar">
+                    <div class="type-stat-fill" id="windBar"></div>
+                </div>
+            </div>
+            <div class="type-stat-card speaker">
+                <div class="type-stat-icon">🔊</div>
+                <div class="type-stat-info">
+                    <div class="type-stat-name">스피커</div>
+                    <div class="type-stat-value" id="speakerCount">0</div>
+                </div>
+                <div class="type-stat-bar">
+                    <div class="type-stat-fill" id="speakerBar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <div class="control-row">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="센서명, UUID로 검색..." />
+                <button class="btn" onclick="searchSensors()">🔍 검색</button>
+            </div>
+            
+            <button class="btn success" onclick="openAddSensorModal()">➕ 새 센서 추가</button>
+            <button class="btn secondary" onclick="refreshSensors()">🔄 새로고침</button>
+            <button class="btn warning" onclick="exportSensors()">📥 내보내기</button>
+        </div>
+        
+        <div class="control-row">
+            <div class="filter-group">
+                <label for="filterType">센서 타입:</label>
+                <select id="filterType" onchange="filterSensors()">
+                    <option value="">전체</option>
+                    <option value="particle">미세먼지</option>
+                    <option value="temp_humidity">온습도</option>
+                    <option value="wind">풍향</option>
+                    <option value="speaker">스피커</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="filterStatus">상태:</label>
+                <select id="filterStatus" onchange="filterSensors()">
+                    <option value="">전체</option>
+                    <option value="active">활성</option>
+                    <option value="inactive">비활성</option>
+                    <option value="maintenance">유지보수</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="filterConnection">연결 상태:</label>
+                <select id="filterConnection" onchange="filterSensors()">
+                    <option value="">전체</option>
+                    <option value="online">온라인</option>
+                    <option value="offline">오프라인</option>
+                    <option value="unknown">알 수 없음</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="filterCompany">회사:</label>
+                <select id="filterCompany" onchange="filterSensors()">
+                    <option value="">전체</option>
+                    <option value="unregistered">미등록</option>
+                    <!-- 회사 옵션은 동적으로 추가 -->
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div id="messageArea"></div>
+    
+    <div class="sensor-table-container">
+        <div class="table-header">
+            <span id="sensorCount">총 0개의 센서</span>
+            <div id="selectedCount" style="display: none;">
+                <span id="selectedText">0개 선택됨</span>
+                <button class="btn btn-sm danger" onclick="deleteSelectedSensors()">선택 삭제</button>
+            </div>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">
+                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" />
+                        </th>
+                        <th>센서 정보</th>
+                        <th>타입</th>
+                        <th>상태</th>
+                        <th>연결 상태</th>
+                        <th>소속 회사/그룹</th>
+                        <th>마지막 통신</th>
+                        <th>작업</th>
+                    </tr>
+                </thead>
+                <tbody id="sensorTableBody">
+                    <tr>
+                        <td colspan="8" class="loading">
+                            <div class="loading-spinner"></div>
+                            <div>센서 목록을 불러오는 중...</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="pagination" id="pagination"></div>
+    </div>
+    
+    <!-- 센서 추가/수정 모달 -->
+    <div id="sensorModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">새 센서 추가</h2>
+                <button class="close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="sensorForm">
+                    <input type="hidden" id="sensorId" />
+                    
+                    <div class="info-box">
+                        💡 센서를 등록하기 전에 센서 장치에서 UUID를 확인하세요.
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="sensorUUID">센서 UUID *</label>
+                        <input type="text" id="sensorUUID" required placeholder="예: SENSOR-001-ABC123" />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="name">센서 이름 *</label>
+                        <input type="text" id="name" required placeholder="예: 1층 로비 온습도 센서" />
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sensorType">센서 타입 *</label>
+                            <select id="sensorType" required>
+                                <option value="">선택하세요</option>
+                                <option value="particle">미세먼지 센서</option>
+                                <option value="temp_humidity">온습도 센서</option>
+                                <option value="wind">풍향 센서</option>
+                                <option value="speaker">스피커</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="groupId">소속 그룹</label>
+                            <select id="groupId">
+                                <option value="">미등록</option>
+                                <!-- 그룹 옵션은 동적으로 추가 -->
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="model">모델</label>
+                            <input type="text" id="model" placeholder="예: DHT22" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="firmwareVersion">펌웨어 버전</label>
+                            <input type="text" id="firmwareVersion" placeholder="예: v1.0.0" />
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="status">상태</label>
+                            <select id="status">
+                                <option value="active">활성</option>
+                                <option value="inactive">비활성</option>
+                                <option value="maintenance">유지보수</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="installationDate">설치일</label>
+                            <input type="date" id="installationDate" />
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="heartbeatInterval">하트비트 간격 (초)</label>
+                            <input type="number" id="heartbeatInterval" value="60" min="10" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="connectionTimeout">연결 타임아웃 (초)</label>
+                            <input type="number" id="connectionTimeout" value="180" min="30" />
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">설명</label>
+                        <textarea id="description" rows="3" placeholder="센서에 대한 추가 정보를 입력하세요..."></textarea>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>🔌 MQTT 토픽 설정</h3>
+                        
+                        <div class="form-group">
+                            <label for="dataTopic">데이터 토픽</label>
+                            <input type="text" id="dataTopic" placeholder="iot-monitoring/sensors/{uuid}/data" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="controlTopic">제어 토픽</label>
+                            <input type="text" id="controlTopic" placeholder="iot-monitoring/sensors/{uuid}/control" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="statusTopic">상태 토픽</label>
+                            <input type="text" id="statusTopic" placeholder="iot-monitoring/sensors/{uuid}/status" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="heartbeatTopic">하트비트 토픽</label>
+                            <input type="text" id="heartbeatTopic" placeholder="iot-monitoring/sensors/{uuid}/heartbeat" />
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn secondary" onclick="closeModal()">취소</button>
+                        <button type="submit" class="btn">저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let sensors = [];
+        let filteredSensors = [];
+        let companies = [];
+        let sensorGroups = [];
+        let editingSensorId = null;
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let selectedSensors = new Set();
+        
+        // 인증 토큰 가져오기
+        function getAuthToken() {
+            return localStorage.getItem('authToken');
+        }
+        
+        // 대시보드로 돌아가기
+        function goBack() {
+            window.location.href = '/dashboard.html';
+        }
+        
+        // API 요청 헬퍼
+        async function apiRequest(url, options = {}) {
+            const token = getAuthToken();
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            const defaultOptions = {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            };
+            
+            const response = await fetch(url, { ...defaultOptions, ...options });
+            
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(error || `HTTP error! status: ${response.status}`);
+            }
+            
+            return response.json();
+        }
+        
+        // 메시지 표시
+        function showMessage(message, type = 'error') {
+            const messageArea = document.getElementById('messageArea');
+            const icon = type === 'success' ? '✓' : '✗';
+            messageArea.innerHTML = `<div class="${type}">${icon} ${message}</div>`;
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+        
+        // 센서 목록 불러오기
+        async function loadSensors() {
+            try {
+                sensors = await apiRequest('/api/sensors');
+                filteredSensors = sensors;
+                updateStatistics();
+                filterSensors();
+            } catch (error) {
+                showMessage('센서 목록을 불러오는데 실패했습니다: ' + error.message);
+            }
+        }
+        
+        // 회사 및 그룹 정보 불러오기
+        async function loadCompaniesAndGroups() {
+            try {
+                companies = await apiRequest('/api/companies');
+                sensorGroups = await apiRequest('/api/sensor-groups');
+                
+                // 회사 필터 옵션 추가
+                const companyFilter = document.getElementById('filterCompany');
+                companies.forEach(company => {
+                    const option = document.createElement('option');
+                    option.value = company.companyId;
+                    option.textContent = company.companyName;
+                    companyFilter.appendChild(option);
+                });
+                
+                // 그룹 선택 옵션 추가
+                const groupSelect = document.getElementById('groupId');
+                groupSelect.innerHTML = '<option value="">미등록</option>';
+                sensorGroups.forEach(group => {
+                    const option = document.createElement('option');
+                    option.value = group.groupId;
+                    const company = companies.find(c => c.companyId === group.companyId);
+                    option.textContent = `${company?.companyName || '알 수 없음'} - ${group.groupName}`;
+                    groupSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('회사/그룹 정보 로드 실패:', error);
+            }
+        }
+        
+        // 통계 업데이트
+        function updateStatistics() {
+            const total = sensors.length;
+            const active = sensors.filter(s => s.status === 'active').length;
+            const online = sensors.filter(s => s.connectionStatus === 'online').length;
+            const offline = sensors.filter(s => s.connectionStatus === 'offline').length;
+            const unregistered = sensors.filter(s => !s.groupId).length;
+            
+            // 센서 타입별 수량 계산
+            const particleCount = sensors.filter(s => s.sensorType === 'particle').length;
+            const tempHumidityCount = sensors.filter(s => s.sensorType === 'temp_humidity').length;
+            const windCount = sensors.filter(s => s.sensorType === 'wind').length;
+            const speakerCount = sensors.filter(s => s.sensorType === 'speaker').length;
+            
+            // 기본 통계 업데이트
+            document.getElementById('totalSensors').textContent = total;
+            document.getElementById('activeSensors').textContent = active;
+            document.getElementById('onlineSensors').textContent = online;
+            document.getElementById('offlineSensors').textContent = offline;
+            document.getElementById('unregisteredSensors').textContent = unregistered;
+            
+            // 센서 타입별 통계 업데이트
+            document.getElementById('particleCount').textContent = particleCount;
+            document.getElementById('tempHumidityCount').textContent = tempHumidityCount;
+            document.getElementById('windCount').textContent = windCount;
+            document.getElementById('speakerCount').textContent = speakerCount;
+            
+            // 프로그레스 바 업데이트
+            const maxCount = Math.max(particleCount, tempHumidityCount, windCount, speakerCount, 1);
+            document.getElementById('particleBar').style.width = `${(particleCount / maxCount) * 100}%`;
+            document.getElementById('tempHumidityBar').style.width = `${(tempHumidityCount / maxCount) * 100}%`;
+            document.getElementById('windBar').style.width = `${(windCount / maxCount) * 100}%`;
+            document.getElementById('speakerBar').style.width = `${(speakerCount / maxCount) * 100}%`;
+        }
+        
+        // 센서 타입 아이콘 가져오기
+        function getSensorIcon(type) {
+            const icons = {
+                'particle': '💨',
+                'temp_humidity': '🌡️',
+                'wind': '🌪️',
+                'speaker': '🔊'
+            };
+            return icons[type] || '📡';
+        }
+        
+        // 센서 타입 이름 변환
+        function getSensorTypeName(type) {
+            const typeNames = {
+                'particle': '미세먼지',
+                'temp_humidity': '온습도',
+                'wind': '풍향',
+                'speaker': '스피커'
+            };
+            return typeNames[type] || type;
+        }
+        
+        // 상태 이름 변환
+        function getStatusName(status) {
+            const statusNames = {
+                'active': '활성',
+                'inactive': '비활성',
+                'maintenance': '유지보수'
+            };
+            return statusNames[status] || status;
+        }
+        
+        // 연결 상태 이름 변환
+        function getConnectionStatusName(status) {
+            const statusNames = {
+                'online': '온라인',
+                'offline': '오프라인',
+                'unknown': '알 수 없음'
+            };
+            return statusNames[status] || status;
+        }
+        
+        // 시간 경과 계산
+        function getTimeAgo(dateTime) {
+            if (!dateTime) return '';
+            
+            const date = new Date(dateTime);
+            const now = new Date();
+            const diff = now - date;
+            
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            
+            if (minutes < 1) return '방금 전';
+            if (minutes < 60) return `${minutes}분 전`;
+            if (hours < 24) return `${hours}시간 전`;
+            return `${days}일 전`;
+        }
+        
+        // 센서 필터링
+        function filterSensors() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const typeFilter = document.getElementById('filterType').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+            const connectionFilter = document.getElementById('filterConnection').value;
+            const companyFilter = document.getElementById('filterCompany').value;
+            
+            filteredSensors = sensors.filter(sensor => {
+                const matchesSearch = !searchTerm || 
+                    sensor.name.toLowerCase().includes(searchTerm) ||
+                    sensor.sensorUuid.toLowerCase().includes(searchTerm);
+                
+                const matchesType = !typeFilter || sensor.sensorType === typeFilter;
+                const matchesStatus = !statusFilter || sensor.status === statusFilter;
+                const matchesConnection = !connectionFilter || sensor.connectionStatus === connectionFilter;
+                
+                let matchesCompany = true;
+                if (companyFilter === 'unregistered') {
+                    matchesCompany = !sensor.groupId;
+                } else if (companyFilter) {
+                    const group = sensorGroups.find(g => g.groupId === sensor.groupId);
+                    matchesCompany = group && group.companyId === parseInt(companyFilter);
+                }
+                
+                return matchesSearch && matchesType && matchesStatus && matchesConnection && matchesCompany;
+            });
+            
+            currentPage = 1;
+            selectedSensors.clear();
+            updateSelectedCount();
+            renderSensors();
+        }
+        
+        // 검색
+        function searchSensors() {
+            filterSensors();
+        }
+        
+        // 센서 테이블 렌더링
+        function renderSensors() {
+            const tbody = document.getElementById('sensorTableBody');
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageSensors = filteredSensors.slice(start, end);
+            
+            document.getElementById('sensorCount').textContent = `총 ${filteredSensors.length}개의 센서`;
+            
+            if (pageSensors.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <div class="empty-state-icon">📡</div>
+                            <div>검색 결과가 없습니다.</div>
+                        </td>
+                    </tr>
+                `;
+                renderPagination();
+                return;
+            }
+            
+            tbody.innerHTML = pageSensors.map(sensor => {
+                const icon = getSensorIcon(sensor.sensorType);
+                const group = sensorGroups.find(g => g.groupId === sensor.groupId);
+                const company = group ? companies.find(c => c.companyId === group.companyId) : null;
+                const lastCommTime = sensor.lastCommunication ? new Date(sensor.lastCommunication).toLocaleString('ko-KR') : '-';
+                const timeAgo = getTimeAgo(sensor.lastCommunication);
+                
+                return `
+                    <tr>
+                        <td>
+                            <input type="checkbox" value="${sensor.sensorId}" onchange="toggleSelect(${sensor.sensorId})" 
+                                ${selectedSensors.has(sensor.sensorId) ? 'checked' : ''} />
+                        </td>
+                        <td>
+                            <div class="sensor-info">
+                                <div class="sensor-icon ${sensor.sensorType}">${icon}</div>
+                                <div class="sensor-details">
+                                    <div class="sensor-name">${sensor.name || '이름 없음'}</div>
+                                    <div class="sensor-uuid">${sensor.sensorUuid}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="sensor-type-badge ${sensor.sensorType}">
+                                ${getSensorTypeName(sensor.sensorType)}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status-badge ${sensor.status}">
+                                ${getStatusName(sensor.status)}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="connection-badge ${sensor.connectionStatus}">
+                                <span class="connection-indicator"></span>
+                                ${getConnectionStatusName(sensor.connectionStatus)}
+                            </span>
+                        </td>
+                        <td>
+                            ${group ? 
+                                `<div class="company-info">
+                                    <div class="company-name">${company?.companyName || '알 수 없음'}</div>
+                                    <div class="group-name">${group.groupName}</div>
+                                </div>` : 
+                                '<span class="no-company">미등록</span>'}
+                        </td>
+                        <td>
+                            <div class="last-comm">
+                                <div class="last-comm-time">${lastCommTime}</div>
+                                ${timeAgo ? `<div class="last-comm-ago">${timeAgo}</div>` : ''}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="actions">
+                                <button class="btn btn-sm" onclick="editSensor(${sensor.sensorId})">수정</button>
+                                <button class="btn btn-sm danger" onclick="deleteSensor(${sensor.sensorId})">삭제</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            document.getElementById('selectAll').checked = false;
+            renderPagination();
+        }
+        
+        // 페이지네이션 렌더링
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredSensors.length / itemsPerPage);
+            const pagination = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            
+            // 이전 버튼
+            html += `<button class="page-btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>이전</button>`;
+            
+            // 페이지 번호
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span>...</span>`;
+                }
+            }
+            
+            // 다음 버튼
+            html += `<button class="page-btn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>다음</button>`;
+            
+            pagination.innerHTML = html;
+        }
+        
+        // 페이지 변경
+        function changePage(page) {
+            currentPage = page;
+            renderSensors();
+        }
+        
+        // 선택 토글
+        function toggleSelect(sensorId) {
+            if (selectedSensors.has(sensorId)) {
+                selectedSensors.delete(sensorId);
+            } else {
+                selectedSensors.add(sensorId);
+            }
+            updateSelectedCount();
+        }
+        
+        // 전체 선택
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll').checked;
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageSensors = filteredSensors.slice(start, end);
+            
+            if (selectAll) {
+                pageSensors.forEach(sensor => selectedSensors.add(sensor.sensorId));
+            } else {
+                pageSensors.forEach(sensor => selectedSensors.delete(sensor.sensorId));
+            }
+            
+            renderSensors();
+            updateSelectedCount();
+        }
+        
+        // 선택 개수 업데이트
+        function updateSelectedCount() {
+            const count = selectedSensors.size;
+            const selectedCountDiv = document.getElementById('selectedCount');
+            const selectedText = document.getElementById('selectedText');
+            
+            if (count > 0) {
+                selectedCountDiv.style.display = 'flex';
+                selectedCountDiv.style.gap = '1rem';
+                selectedCountDiv.style.alignItems = 'center';
+                selectedText.textContent = `${count}개 선택됨`;
+            } else {
+                selectedCountDiv.style.display = 'none';
+            }
+        }
+        
+        // 선택된 센서 삭제
+        async function deleteSelectedSensors() {
+            if (selectedSensors.size === 0) return;
+            
+            if (!confirm(`선택한 ${selectedSensors.size}개의 센서를 삭제하시겠습니까?`)) return;
+            
+            try {
+                for (const sensorId of selectedSensors) {
+                    await apiRequest(`/api/sensors/${sensorId}`, { method: 'DELETE' });
+                }
+                
+                showMessage(`${selectedSensors.size}개의 센서가 삭제되었습니다.`, 'success');
+                selectedSensors.clear();
+                updateSelectedCount();
+                loadSensors();
+            } catch (error) {
+                showMessage('센서 삭제에 실패했습니다: ' + error.message);
+            }
+        }
+        
+        // 모달 열기
+        function openAddSensorModal() {
+            editingSensorId = null;
+            document.getElementById('modalTitle').textContent = '새 센서 추가';
+            document.getElementById('sensorForm').reset();
+            document.getElementById('sensorUUID').disabled = false;
+            
+            // UUID 입력 시 토픽 자동 생성
+            document.getElementById('sensorUUID').addEventListener('input', updateTopics);
+            
+            document.getElementById('sensorModal').style.display = 'block';
+        }
+        
+        // 토픽 자동 생성
+        function updateTopics() {
+            const uuid = document.getElementById('sensorUUID').value;
+            if (uuid && !editingSensorId) {
+                document.getElementById('dataTopic').value = `iot-monitoring/sensors/${uuid}/data`;
+                document.getElementById('controlTopic').value = `iot-monitoring/sensors/${uuid}/control`;
+                document.getElementById('statusTopic').value = `iot-monitoring/sensors/${uuid}/status`;
+                document.getElementById('heartbeatTopic').value = `iot-monitoring/sensors/${uuid}/heartbeat`;
+            }
+        }
+        
+        // 센서 수정
+        async function editSensor(sensorId) {
+            try {
+                const sensor = await apiRequest(`/api/sensors/${sensorId}`);
+                editingSensorId = sensorId;
+                
+                document.getElementById('modalTitle').textContent = '센서 정보 수정';
+                document.getElementById('sensorId').value = sensorId;
+                document.getElementById('sensorUUID').value = sensor.sensorUuid;
+                document.getElementById('sensorUUID').disabled = true;
+                document.getElementById('name').value = sensor.name || '';
+                document.getElementById('sensorType').value = sensor.sensorType;
+                document.getElementById('sensorType').disabled = true;
+                document.getElementById('groupId').value = sensor.groupId || '';
+                document.getElementById('model').value = sensor.model || '';
+                document.getElementById('firmwareVersion').value = sensor.firmwareVersion || '';
+                document.getElementById('status').value = sensor.status;
+                document.getElementById('heartbeatInterval').value = sensor.heartbeatInterval;
+                document.getElementById('connectionTimeout').value = sensor.connectionTimeout;
+                document.getElementById('description').value = sensor.description || '';
+                
+                if (sensor.installationDate) {
+                    document.getElementById('installationDate').value = sensor.installationDate.split('T')[0];
+                }
+                
+                // MQTT 토픽 정보
+                if (sensor.mqttTopics) {
+                    document.getElementById('dataTopic').value = sensor.mqttTopics.dataTopic || '';
+                    document.getElementById('controlTopic').value = sensor.mqttTopics.controlTopic || '';
+                    document.getElementById('statusTopic').value = sensor.mqttTopics.statusTopic || '';
+                    document.getElementById('heartbeatTopic').value = sensor.mqttTopics.heartbeatTopic || '';
+                }
+                
+                document.getElementById('sensorModal').style.display = 'block';
+            } catch (error) {
+                showMessage('센서 정보를 불러오는데 실패했습니다: ' + error.message);
+            }
+        }
+        
+        // 센서 삭제
+        async function deleteSensor(sensorId) {
+            const sensor = sensors.find(s => s.sensorId === sensorId);
+            if (!confirm(`정말로 "${sensor.name || sensor.sensorUuid}" 센서를 삭제하시겠습니까?`)) return;
+            
+            try {
+                await apiRequest(`/api/sensors/${sensorId}`, { method: 'DELETE' });
+                showMessage('센서가 삭제되었습니다.', 'success');
+                loadSensors();
+            } catch (error) {
+                showMessage('센서 삭제에 실패했습니다: ' + error.message);
+            }
+        }
+        
+        // 모달 닫기
+        function closeModal() {
+            document.getElementById('sensorModal').style.display = 'none';
+            document.getElementById('sensorForm').reset();
+            document.getElementById('sensorType').disabled = false;
+            editingSensorId = null;
+        }
+        
+        // 폼 제출
+        document.getElementById('sensorForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const sensorData = {
+                sensorUuid: document.getElementById('sensorUUID').value,
+                name: document.getElementById('name').value,
+                sensorType: document.getElementById('sensorType').value,
+                groupId: document.getElementById('groupId').value || null,
+                model: document.getElementById('model').value,
+                firmwareVersion: document.getElementById('firmwareVersion').value,
+                status: document.getElementById('status').value,
+                heartbeatInterval: parseInt(document.getElementById('heartbeatInterval').value),
+                connectionTimeout: parseInt(document.getElementById('connectionTimeout').value),
+                installationDate: document.getElementById('installationDate').value || null,
+                description: document.getElementById('description').value,
+                mqttTopics: {
+                    dataTopic: document.getElementById('dataTopic').value,
+                    controlTopic: document.getElementById('controlTopic').value,
+                    statusTopic: document.getElementById('statusTopic').value,
+                    heartbeatTopic: document.getElementById('heartbeatTopic').value,
+                    qoS: 0,
+                    retained: false
+                }
+            };
+            
+            try {
+                if (editingSensorId) {
+                    // 수정
+                    delete sensorData.sensorUuid; // UUID는 수정 불가
+                    delete sensorData.sensorType; // 타입은 수정 불가
+                    await apiRequest(`/api/sensors/${editingSensorId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(sensorData)
+                    });
+                    showMessage('센서 정보가 수정되었습니다.', 'success');
+                } else {
+                    // 추가
+                    await apiRequest('/api/sensors', {
+                        method: 'POST',
+                        body: JSON.stringify(sensorData)
+                    });
+                    showMessage('새 센서가 추가되었습니다.', 'success');
+                }
+                
+                closeModal();
+                loadSensors();
+            } catch (error) {
+                showMessage('저장에 실패했습니다: ' + error.message);
+            }
+        });
+        
+        // 새로고침
+        function refreshSensors() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('filterType').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterConnection').value = '';
+            document.getElementById('filterCompany').value = '';
+            selectedSensors.clear();
+            updateSelectedCount();
+            loadSensors();
+        }
+        
+        // 센서 목록 내보내기
+        function exportSensors() {
+            const csvContent = [
+                ['ID', 'UUID', '이름', '타입', '상태', '연결상태', '회사', '그룹', '모델', '펌웨어', '설치일', '마지막 통신'],
+                ...filteredSensors.map(sensor => {
+                    const group = sensorGroups.find(g => g.groupId === sensor.groupId);
+                    const company = group ? companies.find(c => c.companyId === group.companyId) : null;
+                    
+                    return [
+                        sensor.sensorId,
+                        sensor.sensorUuid,
+                        sensor.name || '',
+                        getSensorTypeName(sensor.sensorType),
+                        getStatusName(sensor.status),
+                        getConnectionStatusName(sensor.connectionStatus),
+                        company?.companyName || '',
+                        group?.groupName || '',
+                        sensor.model || '',
+                        sensor.firmwareVersion || '',
+                        sensor.installationDate ? new Date(sensor.installationDate).toLocaleDateString('ko-KR') : '',
+                        sensor.lastCommunication ? new Date(sensor.lastCommunication).toLocaleString('ko-KR') : ''
+                    ];
+                })
+            ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+            
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `sensors_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.click();
+        }
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCompaniesAndGroups();
+            loadSensors();
+            
+            // 엔터키로 검색
+            document.getElementById('searchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    searchSensors();
+                }
+            });
+        });
+        
+        // 모달 외부 클릭 시 닫기
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('sensorModal')) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>

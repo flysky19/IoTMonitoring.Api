@@ -8,5 +8,7 @@ namespace IoTMonitoring.Api.Services.Auth.Interfaces
         Task<LoginResponse> LoginAsync(LoginRequest request);
         Task<LoginResponse> RefreshTokenAsync(string refreshToken);
         Task<bool> ValidateTokenAsync(string token);
+
+        bool IsAdmin(string username);
     }
 }

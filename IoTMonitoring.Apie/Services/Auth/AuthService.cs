@@ -99,5 +99,10 @@ namespace IoTMonitoring.Api.Services.Auth
             var principal = _tokenGenerator.ValidateToken(token);
             return Task.FromResult(principal != null);
         }
+
+        public bool IsAdmin(string username)
+        {
+            return username.ToLower() == "admin";
+        }
     }
 }

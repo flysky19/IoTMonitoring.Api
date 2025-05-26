@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT 대시보드</title>
+    <title>IoT 모니터링 대시보드</title>
     <script src="https://unpkg.com/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -32,12 +32,107 @@
         .header h1 {
             font-size: 1.5rem;
             margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        /* 관리자 컨트롤 스타일 */
+        .admin-controls {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        
+        .admin-btn {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .admin-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s ease;
+        }
+        
+        .admin-btn:hover::before {
+            left: 100%;
+        }
+        
+        .admin-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .admin-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 아이콘 애니메이션 */
+        .admin-btn .icon {
+            font-size: 1.1rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .admin-btn:hover .icon {
+            transform: scale(1.2) rotate(5deg);
+        }
+        
+        /* 툴팁 스타일 */
+        .admin-btn .tooltip {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, bottom 0.3s ease;
+        }
+        
+        .admin-btn:hover .tooltip {
+            opacity: 1;
+            bottom: -35px;
         }
         
         .user-info {
             display: flex;
             align-items: center;
             gap: 1rem;
+        }
+        
+        .role-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 500;
         }
         
         .logout-btn {
@@ -55,7 +150,204 @@
             background: rgba(255, 255, 255, 0.3);
         }
         
-        .dashboard-container {
+        /* 관리자 대시보드 스타일 */
+        .admin-dashboard {
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+            border-top: 4px solid transparent;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .stat-card.users {
+            border-top-color: #3498db;
+        }
+        
+        .stat-card.companies {
+            border-top-color: #e74c3c;
+        }
+        
+        .stat-card.sensors {
+            border-top-color: #2ecc71;
+        }
+        
+        .stat-card.online {
+            border-top-color: #f39c12;
+        }
+        
+        .stat-card.alerts {
+            border-top-color: #9b59b6;
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-icon {
+            font-size: 2.5rem;
+            opacity: 0.8;
+        }
+        
+        .stat-content {
+            text-align: left;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        
+        .stat-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #95a5a6;
+        }
+        
+        .quick-access {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .quick-access h2 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+        
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .quick-link {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #2c3e50;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        
+        .quick-link:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+            transform: translateX(5px);
+        }
+        
+        .quick-link-icon {
+            font-size: 1.5rem;
+        }
+        
+        .recent-activities {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .recent-activities h2 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+        
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .activity-icon.user {
+            background: #e3f2fd;
+            color: #2196f3;
+        }
+        
+        .activity-icon.sensor {
+            background: #e8f5e9;
+            color: #4caf50;
+        }
+        
+        .activity-icon.alert {
+            background: #fff3e0;
+            color: #ff9800;
+        }
+        
+        .activity-details {
+            flex: 1;
+        }
+        
+        .activity-title {
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 0.25rem;
+        }
+        
+        .activity-time {
+            font-size: 0.85rem;
+            color: #95a5a6;
+        }
+        
+        /* 일반 사용자 대시보드 스타일 */
+        .user-dashboard {
             padding: 2rem;
             max-width: 1400px;
             margin: 0 auto;
@@ -379,7 +671,8 @@
         }
         
         @media (max-width: 768px) {
-            .dashboard-container {
+            .admin-dashboard,
+            .user-dashboard {
                 padding: 1rem;
             }
             
@@ -387,6 +680,11 @@
                 padding: 1rem;
                 flex-direction: column;
                 gap: 0.5rem;
+            }
+            
+            .admin-controls {
+                flex-wrap: wrap;
+                justify-content: center;
             }
             
             .dashboard-layout {
@@ -403,19 +701,175 @@
                 width: 100%;
                 justify-content: space-between;
             }
+            
+            .stats-overview {
+                grid-template-columns: 1fr;
+            }
+            
+            .quick-links {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* 숨김 처리 */
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>🌐 IoT 모니터링 대시보드</h1>
+        <div class="admin-controls" id="adminControls" style="display: none;">
+            <button class="admin-btn" onclick="openUserManagement()">
+                <span class="icon">👥</span>
+                <span>사용자 관리</span>
+                <span class="tooltip">사용자 계정 관리</span>
+            </button>
+            <button class="admin-btn" onclick="openCompanyManagement()">
+                <span class="icon">🏢</span>
+                <span>회사 관리</span>
+                <span class="tooltip">회사 정보 관리</span>
+            </button>
+            <button class="admin-btn" onclick="openSensorManagement()">
+                <span class="icon">📡</span>
+                <span>센서 관리</span>
+                <span class="tooltip">센서 설정 관리</span>
+            </button>
+        </div>
         <div class="user-info">
+            <span class="role-badge" id="roleDisplay">일반 사용자</span>
             <span id="welcomeMessage">환영합니다!</span>
             <button id="logoutBtn" class="logout-btn" onclick="logout()">로그아웃</button>
         </div>
     </div>
     
-    <div class="dashboard-container">
+    <!-- 관리자 대시보드 -->
+    <div class="admin-dashboard hidden" id="adminDashboard">
+        <!-- 통계 개요 -->
+        <div class="stats-overview">
+            <div class="stat-card users">
+                <div class="stat-header">
+                    <div class="stat-icon">👥</div>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="adminTotalUsers">0</div>
+                    <div class="stat-label">전체 사용자</div>
+                    <div class="stat-details">
+                        <span>활성: <strong id="adminActiveUsers">0</strong></span>
+                        <span>비활성: <strong id="adminInactiveUsers">0</strong></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card companies">
+                <div class="stat-header">
+                    <div class="stat-icon">🏢</div>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="adminTotalCompanies">0</div>
+                    <div class="stat-label">전체 회사</div>
+                    <div class="stat-details">
+                        <span>활성: <strong id="adminActiveCompanies">0</strong></span>
+                        <span>비활성: <strong id="adminInactiveCompanies">0</strong></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card sensors">
+                <div class="stat-header">
+                    <div class="stat-icon">📡</div>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="adminTotalSensors">0</div>
+                    <div class="stat-label">전체 센서</div>
+                    <div class="stat-details">
+                        <span>온도습도: <strong id="adminTempSensors">0</strong></span>
+                        <span>미세먼지: <strong id="adminParticleSensors">0</strong></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card online">
+                <div class="stat-header">
+                    <div class="stat-icon">🟢</div>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="adminOnlineSensors">0</div>
+                    <div class="stat-label">온라인 센서</div>
+                    <div class="stat-details">
+                        <span>연결률: <strong id="adminConnectionRate">0%</strong></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card alerts">
+                <div class="stat-header">
+                    <div class="stat-icon">🔔</div>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-number" id="adminActiveAlerts">0</div>
+                    <div class="stat-label">활성 알림</div>
+                    <div class="stat-details">
+                        <span>오늘: <strong id="adminTodayAlerts">0</strong></span>
+                        <span>이번주: <strong id="adminWeekAlerts">0</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 빠른 접근 -->
+        <div class="quick-access">
+            <h2>⚡ 빠른 접근</h2>
+            <div class="quick-links">
+                <a href="/user-management.html" class="quick-link">
+                    <span class="quick-link-icon">👤</span>
+                    <div>
+                        <div style="font-weight: 500;">사용자 추가</div>
+                        <div style="font-size: 0.85rem; color: #7f8c8d;">새 사용자 등록</div>
+                    </div>
+                </a>
+                <a href="/company-management.html" class="quick-link">
+                    <span class="quick-link-icon">🏢</span>
+                    <div>
+                        <div style="font-weight: 500;">회사 추가</div>
+                        <div style="font-size: 0.85rem; color: #7f8c8d;">새 회사 등록</div>
+                    </div>
+                </a>
+                <a href="/sensor-management.html" class="quick-link">
+                    <span class="quick-link-icon">📡</span>
+                    <div>
+                        <div style="font-weight: 500;">센서 추가</div>
+                        <div style="font-size: 0.85rem; color: #7f8c8d;">새 센서 등록</div>
+                    </div>
+                </a>
+                <a href="#" class="quick-link" onclick="viewSystemLogs()">
+                    <span class="quick-link-icon">📋</span>
+                    <div>
+                        <div style="font-weight: 500;">시스템 로그</div>
+                        <div style="font-size: 0.85rem; color: #7f8c8d;">로그 확인</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <!-- 최근 활동 -->
+        <div class="recent-activities">
+            <h2>📊 최근 활동</h2>
+            <div class="activity-list" id="recentActivities">
+                <div class="activity-item">
+                    <div class="activity-icon user">👤</div>
+                    <div class="activity-details">
+                        <div class="activity-title">새 사용자 등록</div>
+                        <div class="activity-time">데이터 로딩 중...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 일반 사용자 대시보드 -->
+    <div class="user-dashboard hidden" id="userDashboard">
         <div class="status-bar">
             <span class="connection-status" id="signalrStatus"></span>
             <span id="connectionStatus">SignalR 연결 중...</span>
@@ -470,7 +924,7 @@
                 
                 <!-- 파티클 차트 카드 -->
                 <div class="card">
-                    <h2>💨 미세먼지 (PM2.5)</h2>
+                    <h2>💨 미세먼지 측정값</h2>
                     <div class="chart-container">
                         <canvas id="particleChart"></canvas>
                     </div>
@@ -523,14 +977,15 @@
         let sensorStates = new Map();
         let companies = [];
         let selectedCompanyId = null;
-        let startTime = new Date();
-        let statistics = {
-            dataReceived: 0,
-            heartbeats: 0,
-            totalTemperature: 0,
-            totalHumidity: 0,
-            temperatureReadings: 0,
-            humidityReadings: 0
+        let userRole = 'User'; // 기본값
+        let isAdmin = false;
+        
+        // 통계 데이터
+        let adminStats = {
+            users: { total: 0, active: 0, inactive: 0 },
+            companies: { total: 0, active: 0, inactive: 0 },
+            sensors: { total: 0, online: 0, tempHumidity: 0, particle: 0 },
+            alerts: { active: 0, today: 0, week: 0 }
         };
 
         // 센서 타입별 아이콘 및 이름 매핑
@@ -544,6 +999,23 @@
         // 센서 타입 정보 가져오기
         function getSensorTypeInfo(sensorType) {
             return sensorTypeInfo[sensorType] || { icon: '📡', name: '일반 센서' };
+        }
+
+        // 관리자 페이지 열기 함수들
+        function openUserManagement() {
+            window.location.href = '/user-management.html';
+        }
+
+        function openCompanyManagement() {
+            window.location.href = '/company-management.html';
+        }
+
+        function openSensorManagement() {
+            window.location.href = '/sensor-management.html';
+        }
+        
+        function viewSystemLogs() {
+            alert('시스템 로그 기능은 준비 중입니다.');
         }
 
         // 토큰 만료 확인 함수
@@ -616,6 +1088,143 @@
             return token;
         }
         
+        // 사용자 역할 확인
+        function checkUserRole() {
+            const username = localStorage.getItem('username');
+            const roles = localStorage.getItem('roles');
+            
+            isAdmin = username === 'admin' || (roles && roles.includes('Admin'));
+            userRole = isAdmin ? 'Admin' : 'User';
+            
+            // UI 업데이트
+            document.getElementById('roleDisplay').textContent = isAdmin ? '관리자' : '일반 사용자';
+            
+            if (isAdmin) {
+                document.getElementById('adminControls').style.display = 'flex';
+                document.getElementById('adminDashboard').classList.remove('hidden');
+                document.getElementById('userDashboard').classList.add('hidden');
+                loadAdminDashboard();
+            } else {
+                document.getElementById('adminControls').style.display = 'none';
+                document.getElementById('adminDashboard').classList.add('hidden');
+                document.getElementById('userDashboard').classList.remove('hidden');
+                loadUserDashboard();
+            }
+        }
+        
+        // 관리자 대시보드 로드
+        async function loadAdminDashboard() {
+            const token = await checkAuthentication();
+            if (!token) return;
+            
+            try {
+                // 사용자 통계
+                const usersResponse = await fetch('/api/users?includeInactive=true', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (usersResponse.ok) {
+                    const users = await usersResponse.json();
+                    adminStats.users.total = users.length;
+                    adminStats.users.active = users.filter(u => u.active).length;
+                    adminStats.users.inactive = users.filter(u => !u.active).length;
+                }
+                
+                // 회사 통계
+                const companiesResponse = await fetch('/api/companies?includeInactive=true', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (companiesResponse.ok) {
+                    const companies = await companiesResponse.json();
+                    adminStats.companies.total = companies.length;
+                    adminStats.companies.active = companies.filter(c => c.active).length;
+                    adminStats.companies.inactive = companies.filter(c => !c.active).length;
+                }
+                
+                // 센서 통계
+                const sensorsResponse = await fetch('/api/sensors', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (sensorsResponse.ok) {
+                    const sensors = await sensorsResponse.json();
+                    adminStats.sensors.total = sensors.length;
+                    adminStats.sensors.online = sensors.filter(s => s.connectionStatus === 'online').length;
+                    adminStats.sensors.tempHumidity = sensors.filter(s => s.sensorType === 'temp_humidity').length;
+                    adminStats.sensors.particle = sensors.filter(s => s.sensorType === 'particle').length;
+                }
+                
+                updateAdminUI();
+                loadRecentActivities();
+                
+            } catch (error) {
+                console.error('관리자 통계 로드 오류:', error);
+            }
+        }
+        
+        // 관리자 UI 업데이트
+        function updateAdminUI() {
+            document.getElementById('adminTotalUsers').textContent = adminStats.users.total;
+            document.getElementById('adminActiveUsers').textContent = adminStats.users.active;
+            document.getElementById('adminInactiveUsers').textContent = adminStats.users.inactive;
+            
+            document.getElementById('adminTotalCompanies').textContent = adminStats.companies.total;
+            document.getElementById('adminActiveCompanies').textContent = adminStats.companies.active;
+            document.getElementById('adminInactiveCompanies').textContent = adminStats.companies.inactive;
+            
+            document.getElementById('adminTotalSensors').textContent = adminStats.sensors.total;
+            document.getElementById('adminOnlineSensors').textContent = adminStats.sensors.online;
+            document.getElementById('adminTempSensors').textContent = adminStats.sensors.tempHumidity;
+            document.getElementById('adminParticleSensors').textContent = adminStats.sensors.particle;
+            
+            const connectionRate = adminStats.sensors.total > 0 
+                ? Math.round((adminStats.sensors.online / adminStats.sensors.total) * 100) 
+                : 0;
+            document.getElementById('adminConnectionRate').textContent = connectionRate + '%';
+            
+            // 알림 통계 (예시)
+            document.getElementById('adminActiveAlerts').textContent = '3';
+            document.getElementById('adminTodayAlerts').textContent = '8';
+            document.getElementById('adminWeekAlerts').textContent = '42';
+        }
+        
+        // 최근 활동 로드 (예시)
+        function loadRecentActivities() {
+            const activities = [
+                { type: 'user', title: '새 사용자 "user123" 등록', time: '5분 전' },
+                { type: 'sensor', title: '센서 "온습도-01" 온라인', time: '10분 전' },
+                { type: 'alert', title: '회사 "ABC" 센서 오프라인 알림', time: '30분 전' },
+                { type: 'user', title: '사용자 "test01" 로그인', time: '1시간 전' },
+                { type: 'sensor', title: '새 센서 "미세먼지-05" 등록', time: '2시간 전' }
+            ];
+            
+            const container = document.getElementById('recentActivities');
+            container.innerHTML = activities.map(activity => `
+                <div class="activity-item">
+                    <div class="activity-icon ${activity.type}">
+                        ${activity.type === 'user' ? '👤' : activity.type === 'sensor' ? '📡' : '🔔'}
+                    </div>
+                    <div class="activity-details">
+                        <div class="activity-title">${activity.title}</div>
+                        <div class="activity-time">${activity.time}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 일반 사용자 대시보드 로드
+        async function loadUserDashboard() {
+            const token = await checkAuthentication();
+            if (!token) return;
+            
+            // 차트 초기화
+            initializeCharts();
+            
+            // 회사 목록 로드
+            await loadCompanies();
+            
+            // SignalR 연결 시작
+            await startSignalRConnection(token);
+        }
+        
         // 로그아웃 함수
         async function logout() {
             try {
@@ -643,6 +1252,8 @@
             }
         }
 
+        // === 일반 사용자 함수들 ===
+        
         // 차트 초기화
         function initializeCharts() {
             const temperatureCtx = document.getElementById('temperatureChart').getContext('2d');
@@ -703,14 +1314,54 @@
                 type: 'line',
                 data: {
                     labels: [],
-                    datasets: [{
-                        label: 'PM2.5 (㎍/㎥)',
-                        data: [],
-                        borderColor: '#9b59b6',
-                        backgroundColor: 'rgba(155, 89, 182, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
+                    datasets: [
+                        {
+                            label: 'PM1.0 (㎍/㎥)',
+                            data: [],
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            tension: 0.4,
+                            hidden: true
+                        },
+                        {
+                            label: 'PM2.5 (㎍/㎥)',
+                            data: [],
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'PM4.0 (㎍/㎥)',
+                            data: [],
+                            borderColor: '#f39c12',
+                            backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                            tension: 0.4,
+                            hidden: true
+                        },
+                        {
+                            label: 'PM10.0 (㎍/㎥)',
+                            data: [],
+                            borderColor: '#9b59b6',
+                            backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'PM0.5 (개수/㎥)',
+                            data: [],
+                            borderColor: '#1abc9c',
+                            backgroundColor: 'rgba(26, 188, 156, 0.1)',
+                            tension: 0.4,
+                            hidden: true
+                        },
+                        {
+                            label: 'PM5.0 (개수/㎥)',
+                            data: [],
+                            borderColor: '#34495e',
+                            backgroundColor: 'rgba(52, 73, 94, 0.1)',
+                            tension: 0.4,
+                            hidden: true
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
@@ -718,8 +1369,30 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            title: { display: true, text: 'PM2.5 (㎍/㎥)' }
+                            title: { display: true, text: '농도' }
                         }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 10,
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
                     }
                 }
             });
@@ -847,7 +1520,7 @@
                             valueDisplay = `${sensor.latestData.temperature || '--'}°C, ${sensor.latestData.humidity || '--'}%`;
                             break;
                         case 'particle':
-                            valueDisplay = `PM2.5: ${sensor.latestData.pm2_5 || '--'}㎍/㎥`;
+                            valueDisplay = `PM2.5: ${sensor.latestData.pm2_5 || '--'} | PM10: ${sensor.latestData.pm10_0 || '--'}㎍/㎥`;
                             break;
                         case 'wind':
                             valueDisplay = `풍속: ${sensor.latestData.windSpeed || '--'}m/s`;
@@ -897,7 +1570,6 @@
                 console.log("센서 데이터 수신:", sensorData);
                 addRealtimeData(sensorData);
                 updateCharts(sensorData);
-                statistics.dataReceived++;
             });
             
             try {
@@ -934,8 +1606,52 @@
                 updateChart(humidityChart, sensorData.data.humidity, time);
             }
 
-            if (sensorData.data.pm2_5 !== undefined) {
-                updateChart(particleChart, sensorData.data.pm2_5, time);
+            // 파티클 센서 데이터 처리
+            if (sensorData.sensorType === 'particle') {
+                const particleData = sensorData.data;
+                
+                // 모든 데이터셋에 동일한 시간 라벨 추가
+                if (particleChart.data.labels.length === 0 || 
+                    particleChart.data.labels[particleChart.data.labels.length - 1] !== time) {
+                    particleChart.data.labels.push(time);
+                    
+                    // 20개 이상이면 가장 오래된 데이터 제거
+                    if (particleChart.data.labels.length > 20) {
+                        particleChart.data.labels.shift();
+                    }
+                }
+                
+                // 각 PM 값 업데이트
+                if (particleData.pm1_0 !== undefined) {
+                    updateParticleDataset(0, particleData.pm1_0);
+                }
+                if (particleData.pm2_5 !== undefined) {
+                    updateParticleDataset(1, particleData.pm2_5);
+                }
+                if (particleData.pm4_0 !== undefined) {
+                    updateParticleDataset(2, particleData.pm4_0);
+                }
+                if (particleData.pm10_0 !== undefined) {
+                    updateParticleDataset(3, particleData.pm10_0);
+                }
+                if (particleData.pm_0_5 !== undefined) {
+                    updateParticleDataset(4, particleData.pm_0_5);
+                }
+                if (particleData.pm_5_0 !== undefined) {
+                    updateParticleDataset(5, particleData.pm_5_0);
+                }
+                
+                particleChart.update('none');
+            }
+        }
+        
+        // 파티클 데이터셋 업데이트 함수
+        function updateParticleDataset(datasetIndex, value) {
+            particleChart.data.datasets[datasetIndex].data.push(value);
+            
+            // 20개 이상이면 가장 오래된 데이터 제거
+            if (particleChart.data.datasets[datasetIndex].data.length > 20) {
+                particleChart.data.datasets[datasetIndex].data.shift();
             }
         }
 
@@ -959,9 +1675,21 @@
             if (sensorData.data.humidity !== undefined) {
                 values += `💧 ${sensorData.data.humidity}% `;
             }
-            if (sensorData.data.pm2_5 !== undefined) {
-                values += `💨 ${sensorData.data.pm2_5}㎍/㎥ `;
+            
+            // 파티클 센서 데이터 표시
+            if (sensorData.sensorType === 'particle') {
+                values = `${typeInfo.icon} `;
+                if (sensorData.data.pm1_0 !== undefined) {
+                    values += `PM1.0: ${sensorData.data.pm1_0} `;
+                }
+                if (sensorData.data.pm2_5 !== undefined) {
+                    values += `PM2.5: ${sensorData.data.pm2_5} `;
+                }
+                if (sensorData.data.pm10_0 !== undefined) {
+                    values += `PM10: ${sensorData.data.pm10_0}㎍/㎥ `;
+                }
             }
+            
             if (sensorData.data.windSpeed !== undefined) {
                 values += `🌪️ ${sensorData.data.windSpeed}m/s `;
             }
@@ -1037,14 +1765,8 @@
             
             document.getElementById('welcomeMessage').textContent = welcomeText;
             
-            // 차트 초기화
-            initializeCharts();
-            
-            // 회사 목록 로드
-            await loadCompanies();
-            
-            // SignalR 연결 시작
-            await startSignalRConnection(token);
+            // 사용자 역할 확인 및 적절한 대시보드 로드
+            checkUserRole();
         }
         
         // 페이지 로드 시 초기화
@@ -1052,20 +1774,6 @@
             initializeDashboard();
         });
         
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            // 인증 관련 키만 지우고
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('refreshToken');
-            
-            // 세이브된 사용자 정보는 유지
-            // localStorage.removeItem('savedUsername');
-            // localStorage.removeItem('savedPassword');
-            // localStorage.removeItem('rememberMe');
-
-            // 로그인 페이지로 이동
-            window.location.href = '/login.html';
-        });
-
         // 페이지 언로드 시 연결 정리
         window.addEventListener('beforeunload', function() {
             if (connection) {
