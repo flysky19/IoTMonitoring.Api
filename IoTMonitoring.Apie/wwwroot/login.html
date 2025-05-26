@@ -1,251 +1,258 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT 모니터링 시스템 - 로그인</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .login-container {
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 400px;
-        }
-        
-        .login-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .login-header h1 {
-            color: #333;
-            margin: 0;
-            font-size: 24px;
-        }
-        
-        .login-header p {
-            color: #666;
-            margin: 10px 0 0 0;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #333;
-            font-weight: 500;
-        }
-        
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-            box-sizing: border-box;
-        }
-        
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        .login-btn {
-            width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 12px;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        
-        .login-btn:hover {
-            transform: translateY(-2px);
-        }
-        
-        .login-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .error-message {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        
-        .demo-info {
-            background: #d4edda;
-            color: #155724;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 20px;
-            font-size: 14px;
-        }
-        
-        .demo-info strong {
-            display: block;
-            margin-bottom: 10px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IoT 모니터링 시스템 - 로그인</title>
+  <!-- 구글 폰트 -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /* CSS 변수 */
+    :root {
+      --color-primary: #6c5ce7;
+      --color-secondary: #a29bfe;
+      --bg-gradient: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+      --text-light: #ffffff;
+      --radius: 12px;
+      --transition: 0.3s ease;
+      --overlay-color: rgba(0, 0, 0, 0.35);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; }
+
+    /* 배경 초기 스타일 */
+    body {
+      background-color: #2d3436;
+      background-image: var(--bg-gradient);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      position: relative;
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-image 0.5s ease-in-out;
+    }
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--overlay-color);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* 로그인 컨테이너 */
+    .login-container {
+      position: relative;
+      z-index: 1;
+      width: 90%; max-width: 360px;
+      padding: 2rem;
+      background: rgba(255,255,255,0.1);
+      border-radius: var(--radius);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      color: var(--text-light);
+      animation: fadeInCard var(--transition) 0.2s both;
+    }
+    @keyframes fadeInCard {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .login-header { text-align: center; margin-bottom: 1.5rem; }
+    .login-header h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .login-header p { font-size: 0.9rem; color: rgba(255,255,255,0.8); }
+
+    /* 에러 메시지 */
+    .error-message {
+      background: rgba(248, 215, 218, 0.8);
+      color: #721c24;
+      padding: 0.75rem;
+      border-radius: var(--radius);
+      margin-bottom: 1rem;
+      display: none;
+      font-size: 0.9rem;
+    }
+
+    /* 입력 필드 & 플로팅 라벨 */
+    .form-group { position: relative; margin-bottom: 1.5rem; }
+    .form-group input {
+      width: 100%; padding: 1rem 0.75rem; font-size: 1rem;
+      border: 2px solid rgba(255,255,255,0.6);
+      border-radius: var(--radius);
+      background: transparent; color: var(--text-light);
+      transition: border-color var(--transition);
+    }
+    .form-group input:focus { outline: none; border-color: var(--color-secondary); }
+    .form-group label {
+      position: absolute; top: 50%; left: 0.75rem;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.1);
+      padding: 0 0.25rem;
+      color: rgba(255,255,255,0.7);
+      pointer-events: none; font-size: 1rem;
+      transition: transform var(--transition), font-size var(--transition), top var(--transition);
+    }
+    .form-group input:focus + label,
+    .form-group input:not(:placeholder-shown) + label {
+      top: -0.6rem; font-size: 0.75rem; color: var(--text-light);
+    }
+
+    /* 체크박스 */
+    .checkbox-group { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; font-size: 0.9rem; color: rgba(255,255,255,0.8); }
+    .checkbox-group input { width: auto; cursor: pointer; }
+
+    /* 로그인 버튼 */
+    .login-btn {
+      width: 100%; padding: 1rem; font-size: 1rem; font-weight: 600;
+      color: var(--text-light);
+      background: var(--bg-gradient);
+      border: none; border-radius: var(--radius);
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+    .login-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* 데모 정보 */
+    .demo-info { margin-top: 1.5rem; font-size: 0.8rem; color: rgba(255,255,255,0.7); line-height: 1.4; }
+    .demo-info strong { display: block; margin-bottom: 0.5rem; color: var(--text-light); }
+  </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-header">
-            <h1>🌐 IoT 모니터링 시스템</h1>
-            <p>로그인하여 시스템에 접속하세요</p>
-        </div>
-        
-        <div id="errorMessage" class="error-message"></div>
-        
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="username">사용자명</label>
-                <input type="text" id="username" name="username" required autocomplete="username">
-            </div>
-            
-            <div class="form-group">
-                <label for="password">비밀번호</label>
-                <input type="password" id="password" name="password" required autocomplete="current-password">
-            </div>
-            
-            <button type="submit" id="loginBtn" class="login-btn">로그인</button>
-        </form>
-        
-        <div class="demo-info">
-            <strong>데모 계정:</strong>
-            데이터베이스에 등록된 사용자 계정으로 로그인하세요.<br>
-            기본 관리자 계정이 있다면 해당 정보를 사용하세요.
-        </div>
+  <div class="login-container">
+    <div class="login-header">
+      <h1>🌐 IoT 모니터링 시스템</h1>
+      <p>로그인하여 시스템에 접속하세요</p>
     </div>
+    <!-- 에러 메시지 박스 -->
+    <div id="errorMessage" class="error-message"></div>
+    <form id="loginForm" autocomplete="off">
+      <div class="form-group">
+        <input type="text" id="username" name="username" required placeholder=" " autocomplete="username" />
+        <label for="username">사용자명</label>
+      </div>
+      <div class="form-group">
+        <input type="password" id="password" name="password" required placeholder=" " autocomplete="current-password" />
+        <label for="password">비밀번호</label>
+      </div>
+      <div class="checkbox-group">
+        <input type="checkbox" id="rememberMe" name="rememberMe" />
+        <label for="rememberMe">계정 정보 저장하기</label>
+      </div>
+      <button type="submit" id="loginBtn" class="login-btn">로그인</button>
+    </form>
+    <div class="demo-info">
+      <strong>데모 계정:</strong>
+      기본 관리자 계정: <code>admin</code> / <code>admin</code><br />
+      계정 정보를 저장하면 다음번에 자동으로 입력됩니다.
+    </div>
+  </div>
 
-    <script>
-        // 이미 로그인된 경우 대시보드로 리다이렉트
-        if (localStorage.getItem('authToken')) {
-            window.location.href = '/dashboard.html';
+  <!-- 랜덤 배경 및 로그인 처리 스크립트 -->
+  <script>
+    // 랜덤 배경 이미지 설정
+    const images = [
+      './images/bg1.jpg','./images/bg2.jpg','./images/bg3.jpg','./images/bg4.jpg','./images/bg5.jpg',
+      './images/bg6.jpg','./images/bg7.jpg','./images/bg8.jpg','./images/bg9.jpg','./images/bg10.jpg'
+    ];
+    document.addEventListener('DOMContentLoaded', () => {
+      const rand = Math.floor(Math.random() * images.length);
+      document.body.style.backgroundImage = `url('${images[rand]}')`;
+    });
+
+    // 페이지 로드 시 저장된 계정 정보 불러오기 및 인증 체크
+    document.addEventListener('DOMContentLoaded', function() {
+      const savedUsername = localStorage.getItem('savedUsername');
+      const savedPassword = localStorage.getItem('savedPassword');
+      const rememberMe = localStorage.getItem('rememberMe') === 'true';
+      if (rememberMe && savedUsername) {
+        document.getElementById('username').value = savedUsername;
+        document.getElementById('rememberMe').checked = true;
+        if (savedPassword) document.getElementById('password').value = savedPassword;
+      }
+      if (localStorage.getItem('authToken')) {
+        window.location.href = '/dashboard.html';
+      }
+      document.getElementById('username').focus();
+    });
+
+    // 로그인 폼 제출 처리
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const rememberMe = document.getElementById('rememberMe').checked;
+      const loginBtn = document.getElementById('loginBtn');
+      const errorMessage = document.getElementById('errorMessage');
+
+      if (!username.trim() || !password.trim()) {
+        errorMessage.textContent = '사용자명과 비밀번호를 모두 입력해주세요.';
+        errorMessage.style.display = 'block';
+        return;
+      }
+
+      loginBtn.disabled = true;
+      loginBtn.textContent = '로그인 중...';
+      errorMessage.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ username, password })
+        });
+        if (!response.ok) {
+          let err;
+          try { err = await response.json(); } catch { err = { message: `HTTP ${response.status} 오류` }; }
+          throw new Error(err.message || '로그인에 실패했습니다.');
         }
+        const data = await response.json();
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('refreshToken', data.refreshToken);
+        localStorage.setItem('userId', data.userId);
+        localStorage.setItem('username', data.username);
+        localStorage.setItem('fullName', data.fullName);
+        localStorage.setItem('expiration', data.expiration);
+        localStorage.setItem('lastLogin', data.lastLogin);
+        if (rememberMe) {
+          localStorage.setItem('savedUsername', username);
+          localStorage.setItem('savedPassword', password);
+          localStorage.setItem('rememberMe', 'true');
+        } else {
+          localStorage.removeItem('savedUsername');
+          localStorage.removeItem('savedPassword');
+          localStorage.removeItem('rememberMe');
+        }
+        loginBtn.textContent = '로그인 성공! 이동 중...';
+        setTimeout(() => window.location.href = '/dashboard.html', 500);
+      } catch (err) {
+        errorMessage.textContent = err.message;
+        errorMessage.style.display = 'block';
+      } finally {
+        if (loginBtn.textContent !== '로그인 성공! 이동 중...') {
+          loginBtn.disabled = false;
+          loginBtn.textContent = '로그인';
+        }
+      }
+    });
 
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const loginBtn = document.getElementById('loginBtn');
-            const errorMessage = document.getElementById('errorMessage');
-            
-            // 입력값 검증
-            if (!username.trim() || !password.trim()) {
-                errorMessage.textContent = '사용자명과 비밀번호를 모두 입력해주세요.';
-                errorMessage.style.display = 'block';
-                return;
-            }
-            
-            // 로딩 상태
-            loginBtn.disabled = true;
-            loginBtn.textContent = '로그인 중...';
-            errorMessage.style.display = 'none';
-            
-            try {
-                console.log('로그인 시도:', { username });
-                
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                        username: username, 
-                        password: password 
-                    })
-                });
-                
-                console.log('응답 상태:', response.status);
-                
-                if (!response.ok) {
-                    // 에러 응답 처리
-                    let errorData;
-                    try {
-                        errorData = await response.json();
-                    } catch {
-                        errorData = { message: `HTTP ${response.status} 오류가 발생했습니다.` };
-                    }
-                    throw new Error(errorData.message || '로그인에 실패했습니다.');
-                }
-                
-                const data = await response.json();
-                console.log('로그인 응답:', {
-                    userId: data.userId,
-                    username: data.username,
-                    fullName: data.fullName,
-                    hasToken: !!data.token,
-                    hasRefreshToken: !!data.refreshToken
-                });
-                
-                // 기존 DTO 구조에 맞춰 토큰 저장
-                localStorage.setItem('authToken', data.token);
-                localStorage.setItem('refreshToken', data.refreshToken);
-                localStorage.setItem('userId', data.userId);
-                localStorage.setItem('username', data.username);
-                localStorage.setItem('fullName', data.fullName);
-                localStorage.setItem('expiration', data.expiration);
-                localStorage.setItem('lastLogin', data.lastLogin);
-                
-                console.log('로컬 스토리지 저장 완료');
-                
-                // 성공 메시지 표시 후 리다이렉트
-                loginBtn.textContent = '로그인 성공! 이동 중...';
-                
-                setTimeout(() => {
-                    window.location.href = '/dashboard.html';
-                }, 500);
-                
-            } catch (error) {
-                console.error('로그인 오류:', error);
-                errorMessage.textContent = error.message;
-                errorMessage.style.display = 'block';
-            } finally {
-                if (loginBtn.textContent !== '로그인 성공! 이동 중...') {
-                    loginBtn.disabled = false;
-                    loginBtn.textContent = '로그인';
-                }
-            }
-        });
+    // 엔터키로 폼 제출
+    document.getElementById('password').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+    });
 
-        // 개발용: 엔터키로 폼 제출
-        document.getElementById('password').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
-            }
-        });
-
-        // 페이지 로드 시 사용자명 필드에 포커스
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('username').focus();
-        });
-    </script>
+    // 체크박스 변경 시 저장 정보 삭제
+    document.getElementById('rememberMe').addEventListener('change', function(e) {
+      if (!e.target.checked) {
+        localStorage.removeItem('savedUsername');
+        localStorage.removeItem('savedPassword');
+        localStorage.removeItem('rememberMe');
+      }
+    });
+  </script>
 </body>
 </html>

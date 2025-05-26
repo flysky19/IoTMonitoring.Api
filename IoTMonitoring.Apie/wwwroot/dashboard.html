@@ -74,10 +74,23 @@
             gap: 0.5rem;
         }
         
-        .dashboard-grid {
+        .dashboard-layout {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            grid-template-columns: 300px 1fr;
             gap: 2rem;
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            align-content: start;
         }
         
         .card {
@@ -104,19 +117,67 @@
             gap: 0.5rem;
         }
         
-        .sensor-list {
+        .companies-list {
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
+        }
+        
+        .company-item {
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .company-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+        
+        .company-item.selected {
+            background: #e7f3ff;
+            border-left-color: #0056b3;
+        }
+        
+        .company-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+        
+        .company-info {
+            font-size: 0.8rem;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .sensor-count {
+            background: #007bff;
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+        }
+        
+        .sensor-display {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
         }
         
         .sensor-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.75rem;
+            padding: 1rem;
             background: #f8f9fa;
-            border-radius: 5px;
+            border-radius: 8px;
             border-left: 4px solid #28a745;
             transition: all 0.3s;
         }
@@ -145,6 +206,13 @@
         .sensor-type {
             font-size: 0.8rem;
             color: #666;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        
+        .sensor-type-icon {
+            font-size: 1.2rem;
         }
         
         .sensor-values {
@@ -228,7 +296,7 @@
         
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 1rem;
             margin-top: 1rem;
         }
@@ -282,6 +350,13 @@
             background-color: #545b62;
         }
         
+        .btn.full-width {
+            width: 100%;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            font-size: 1rem;
+        }
+        
         .empty-state {
             text-align: center;
             padding: 2rem;
@@ -314,7 +389,12 @@
                 gap: 0.5rem;
             }
             
-            .dashboard-grid {
+            .dashboard-layout {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .main-content {
                 grid-template-columns: 1fr;
                 gap: 1rem;
             }
@@ -331,7 +411,7 @@
         <h1>🌐 IoT 모니터링 대시보드</h1>
         <div class="user-info">
             <span id="welcomeMessage">환영합니다!</span>
-            <button class="logout-btn" onclick="logout()">로그아웃</button>
+            <button id="logoutBtn" class="logout-btn" onclick="logout()">로그아웃</button>
         </div>
     </div>
     
@@ -341,89 +421,93 @@
             <span id="connectionStatus">SignalR 연결 중...</span>
         </div>
         
-        <div class="dashboard-grid">
-            <!-- 센서 상태 카드 -->
-            <div class="card">
-                <h2>📊 센서 상태</h2>
-                <div class="controls">
-                    <button class="btn" onclick="refreshSensors()">새로고침</button>
-                    <button class="btn secondary" onclick="clearSensorList()">목록 초기화</button>
-                </div>
-                <div id="sensorList" class="sensor-list">
-                    <div class="empty-state">센서 데이터를 기다리는 중...</div>
-                </div>
-            </div>
-            
-            <!-- 온도 차트 카드 -->
-            <div class="card">
-                <h2>🌡️ 온도 추이</h2>
-                <div class="chart-container">
-                    <canvas id="temperatureChart"></canvas>
+        <div class="dashboard-layout">
+            <!-- 좌측 사이드바 - 회사 목록 -->
+            <div class="sidebar">
+                <div class="card">
+                    <h2>🏢 회사별 센서</h2>
+                    <div class="controls">
+                        <button class="btn secondary" onclick="refreshCompanies()">새로고침</button>
+                    </div>
+                    <div id="companiesList" class="companies-list">
+                        <div class="empty-state">회사 정보를 불러오는 중...</div>
+                    </div>
+                    <button class="btn full-width" onclick="viewAllSensors()">
+                        🔍 전체 센서 보기
+                    </button>
                 </div>
             </div>
             
-            <!-- 습도 차트 카드 -->
-            <div class="card">
-                <h2>💧 습도 추이</h2>
-                <div class="chart-container">
-                    <canvas id="humidityChart"></canvas>
-                </div>
-            </div>
-            
-            <!-- 실시간 데이터 카드 -->
-            <div class="card">
-                <h2>📡 실시간 데이터</h2>
-                <div class="controls">
-                    <button class="btn secondary" onclick="clearRealtimeData()">데이터 초기화</button>
-                    <button class="btn" onclick="exportData()">데이터 내보내기</button>
-                </div>
-                <div id="realtimeData" class="realtime-data">
-                    <div class="empty-state">실시간 데이터를 기다리는 중...</div>
-                </div>
-            </div>
-            
-            <!-- 통계 카드 -->
-            <div class="card">
-                <h2>📈 통계</h2>
-                <div id="statisticsGrid" class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-value" id="totalSensors">0</div>
-                        <div class="stat-label">총 센서 수</div>
+            <!-- 메인 컨텐츠 영역 -->
+            <div class="main-content">
+                <!-- 선택된 회사의 센서 목록 -->
+                <div class="card">
+                    <h2 id="sensorListTitle">📊 센서 상태</h2>
+                    <div class="controls">
+                        <button class="btn" onclick="refreshSensors()">새로고침</button>
+                        <button class="btn secondary" onclick="clearSensorList()">목록 초기화</button>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="onlineSensors">0</div>
-                        <div class="stat-label">온라인 센서</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="avgTemperature">--</div>
-                        <div class="stat-label">평균 온도</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="avgHumidity">--</div>
-                        <div class="stat-label">평균 습도</div>
+                    <div id="sensorList" class="sensor-display">
+                        <div class="empty-state">회사를 선택하여 센서를 확인하세요</div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- 시스템 상태 카드 -->
-            <div class="card">
-                <h2>⚙️ 시스템 상태</h2>
-                <div id="systemStatus" class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-value" id="dataReceived">0</div>
-                        <div class="stat-label">수신된 데이터</div>
+                
+                <!-- 온도 차트 카드 -->
+                <div class="card">
+                    <h2>🌡️ 온도 추이</h2>
+                    <div class="chart-container">
+                        <canvas id="temperatureChart"></canvas>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="heartbeats">0</div>
-                        <div class="stat-label">하트비트</div>
+                </div>
+                
+                <!-- 습도 차트 카드 -->
+                <div class="card">
+                    <h2>💧 습도 추이</h2>
+                    <div class="chart-container">
+                        <canvas id="humidityChart"></canvas>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="uptime">00:00:00</div>
-                        <div class="stat-label">가동 시간</div>
+                </div>
+                
+                <!-- 파티클 차트 카드 -->
+                <div class="card">
+                    <h2>💨 미세먼지 (PM2.5)</h2>
+                    <div class="chart-container">
+                        <canvas id="particleChart"></canvas>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="lastUpdate">--</div>
-                        <div class="stat-label">마지막 업데이트</div>
+                </div>
+                
+                <!-- 실시간 데이터 카드 -->
+                <div class="card">
+                    <h2>📡 실시간 데이터</h2>
+                    <div class="controls">
+                        <button class="btn secondary" onclick="clearRealtimeData()">데이터 초기화</button>
+                        <button class="btn" onclick="exportData()">데이터 내보내기</button>
+                    </div>
+                    <div id="realtimeData" class="realtime-data">
+                        <div class="empty-state">실시간 데이터를 기다리는 중...</div>
+                    </div>
+                </div>
+                
+                <!-- 통계 카드 -->
+                <div class="card">
+                    <h2>📈 통계</h2>
+                    <div id="statisticsGrid" class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="totalSensors">0</div>
+                            <div class="stat-label">총 센서 수</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="onlineSensors">0</div>
+                            <div class="stat-label">온라인 센서</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="avgTemperature">--</div>
+                            <div class="stat-label">평균 온도</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="avgHumidity">--</div>
+                            <div class="stat-label">평균 습도</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -435,7 +519,10 @@
         let connection = null;
         let temperatureChart = null;
         let humidityChart = null;
+        let particleChart = null;
         let sensorStates = new Map();
+        let companies = [];
+        let selectedCompanyId = null;
         let startTime = new Date();
         let statistics = {
             dataReceived: 0,
@@ -445,6 +532,19 @@
             temperatureReadings: 0,
             humidityReadings: 0
         };
+
+        // 센서 타입별 아이콘 및 이름 매핑
+        const sensorTypeInfo = {
+            'particle': { icon: '💨', name: '미세먼지 센서' },
+            'temp_humidity': { icon: '🌡️', name: '온습도 센서' },
+            'wind': { icon: '🌪️', name: '풍향 센서' },
+            'speaker': { icon: '🔊', name: '스피커' }
+        };
+
+        // 센서 타입 정보 가져오기
+        function getSensorTypeInfo(sensorType) {
+            return sensorTypeInfo[sensorType] || { icon: '📡', name: '일반 센서' };
+        }
 
         // 토큰 만료 확인 함수
         function isTokenExpired() {
@@ -475,7 +575,6 @@
                 if (response.ok) {
                     const data = await response.json();
                     
-                    // 새 토큰 저장
                     localStorage.setItem('authToken', data.token);
                     localStorage.setItem('refreshToken', data.refreshToken);
                     localStorage.setItem('expiration', data.expiration);
@@ -506,7 +605,6 @@
                 return null;
             }
             
-            // 토큰 만료 확인
             if (isTokenExpired()) {
                 console.log('토큰이 만료되었습니다. 갱신을 시도합니다.');
                 token = await refreshToken();
@@ -537,11 +635,14 @@
                 if (connection) {
                     await connection.stop();
                 }
-                localStorage.clear();
+                
+                // 인증 관련 키만 삭제 (저장된 계정 정보는 그대로 유지)
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('refreshToken');
                 window.location.href = '/login.html';
             }
         }
-        
+
         // 차트 초기화
         function initializeCharts() {
             const temperatureCtx = document.getElementById('temperatureChart').getContext('2d');
@@ -561,29 +662,10 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    },
                     scales: {
                         y: {
                             beginAtZero: false,
-                            title: {
-                                display: true,
-                                text: '온도 (°C)'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: '시간'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top'
+                            title: { display: true, text: '온도 (°C)' }
                         }
                     }
                 }
@@ -606,36 +688,43 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    },
                     scales: {
                         y: {
                             beginAtZero: true,
                             max: 100,
-                            title: {
-                                display: true,
-                                text: '습도 (%)'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: '시간'
-                            }
+                            title: { display: true, text: '습도 (%)' }
                         }
-                    },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top'
+                    }
+                }
+            });
+
+            const particleCtx = document.getElementById('particleChart').getContext('2d');
+            particleChart = new Chart(particleCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'PM2.5 (㎍/㎥)',
+                        data: [],
+                        borderColor: '#9b59b6',
+                        backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'PM2.5 (㎍/㎥)' }
                         }
                     }
                 }
             });
         }
-        
+
         // 연결 상태 업데이트
         function updateConnectionStatus(message, isConnected) {
             const statusElement = document.getElementById('connectionStatus');
@@ -644,7 +733,156 @@
             statusElement.textContent = message;
             statusIndicator.className = `connection-status ${isConnected ? 'connected' : 'disconnected'}`;
         }
-        
+
+        // 회사 목록 로드
+        async function loadCompanies() {
+            const token = await checkAuthentication();
+            if (!token) return;
+
+            try {
+                const response = await fetch('/api/companies', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    companies = await response.json();
+                    renderCompanies();
+                } else {
+                    console.error('회사 목록 로드 실패');
+                }
+            } catch (error) {
+                console.error('회사 목록 로드 오류:', error);
+            }
+        }
+
+        // 회사 목록 렌더링
+        function renderCompanies() {
+            const container = document.getElementById('companiesList');
+            
+            if (companies.length === 0) {
+                container.innerHTML = '<div class="empty-state">등록된 회사가 없습니다.</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            companies.forEach(company => {
+                const companyItem = document.createElement('div');
+                companyItem.className = 'company-item';
+                companyItem.onclick = () => selectCompany(company.companyId);
+                
+                companyItem.innerHTML = `
+                    <div class="company-name">${company.companyName}</div>
+                    <div class="company-info">
+                        <span>${company.address || '주소 미입력'}</span>
+                        <span class="sensor-count">${company.sensorCount || 0}개 센서</span>
+                    </div>
+                `;
+                
+                container.appendChild(companyItem);
+            });
+        }
+
+        // 회사 선택
+        async function selectCompany(companyId) {
+            selectedCompanyId = companyId;
+            
+            // 선택된 회사 하이라이트
+            document.querySelectorAll('.company-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+
+            // 선택된 회사의 센서 로드
+            await loadSensorsByCompany(companyId);
+            
+            // 타이틀 업데이트
+            const company = companies.find(c => c.companyId === companyId);
+            document.getElementById('sensorListTitle').textContent = `📊 ${company.companyName} 센서 상태`;
+        }
+
+        // 회사별 센서 로드
+        async function loadSensorsByCompany(companyId) {
+            const token = await checkAuthentication();
+            if (!token) return;
+
+            try {
+                const response = await fetch(`/api/sensors?companyId=${companyId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const sensors = await response.json();
+                    renderSensors(sensors);
+                } else {
+                    console.error('센서 목록 로드 실패');
+                }
+            } catch (error) {
+                console.error('센서 목록 로드 오류:', error);
+            }
+        }
+
+        // 센서 목록 렌더링
+        function renderSensors(sensors) {
+            const container = document.getElementById('sensorList');
+            
+            if (sensors.length === 0) {
+                container.innerHTML = '<div class="empty-state">등록된 센서가 없습니다.</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            sensors.forEach(sensor => {
+                const typeInfo = getSensorTypeInfo(sensor.sensorType);
+                const sensorItem = document.createElement('div');
+                sensorItem.className = `sensor-item ${sensor.connectionStatus !== 'online' ? 'offline' : ''}`;
+                
+                let valueDisplay = '';
+                if (sensor.latestData) {
+                    switch (sensor.sensorType) {
+                        case 'temp_humidity':
+                            valueDisplay = `${sensor.latestData.temperature || '--'}°C, ${sensor.latestData.humidity || '--'}%`;
+                            break;
+                        case 'particle':
+                            valueDisplay = `PM2.5: ${sensor.latestData.pm2_5 || '--'}㎍/㎥`;
+                            break;
+                        case 'wind':
+                            valueDisplay = `풍속: ${sensor.latestData.windSpeed || '--'}m/s`;
+                            break;
+                        case 'speaker':
+                            valueDisplay = `${sensor.latestData.powerStatus ? '🔊 ON' : '🔇 OFF'}`;
+                            break;
+                        default:
+                            valueDisplay = '데이터 없음';
+                    }
+                }
+                
+                sensorItem.innerHTML = `
+                    <div class="sensor-info">
+                        <div class="sensor-name">${sensor.name || `센서 ${sensor.sensorId}`}</div>
+                        <div class="sensor-type">
+                            <span class="sensor-type-icon">${typeInfo.icon}</span>
+                            ${typeInfo.name}
+                        </div>
+                    </div>
+                    <div class="sensor-values">
+                        <div class="sensor-value">${valueDisplay}</div>
+                        <div class="sensor-time">${sensor.lastCommunication ? new Date(sensor.lastCommunication).toLocaleTimeString('ko-KR') : '데이터 없음'}</div>
+                    </div>
+                `;
+                
+                container.appendChild(sensorItem);
+            });
+        }
+
+        // 전체 센서 보기 페이지로 이동
+        function viewAllSensors() {
+            window.location.href = '/sensor-groups.html';
+        }
+
         // SignalR 연결 함수
         async function startSignalRConnection(token) {
             connection = new signalR.HubConnectionBuilder()
@@ -655,34 +893,13 @@
                 .withAutomaticReconnect()
                 .build();
             
-            // SignalR 이벤트 핸들러
-            connection.on("Connected", function (data) {
-                updateConnectionStatus("SignalR 연결됨", true);
-                console.log("SignalR 연결됨:", data);
-            });
-            
             connection.on("SensorDataReceived", function (sensorData) {
                 console.log("센서 데이터 수신:", sensorData);
                 addRealtimeData(sensorData);
-                updateSensorList(sensorData);
                 updateCharts(sensorData);
-                updateStatistics(sensorData);
                 statistics.dataReceived++;
-                updateSystemStatus();
             });
             
-            connection.on("HeartbeatReceived", function (data) {
-                console.log("하트비트 수신:", data);
-                statistics.heartbeats++;
-                updateSystemStatus();
-            });
-            
-            connection.on("SensorStatusChanged", function (data) {
-                console.log("센서 상태 변경:", data);
-                updateSensorStatus(data.sensorId, data.status);
-            });
-            
-            // 연결 시작
             try {
                 await connection.start();
                 updateConnectionStatus("SignalR 연결 성공!", true);
@@ -690,31 +907,13 @@
                 updateConnectionStatus("SignalR 연결 실패: " + error, false);
                 console.error("SignalR 연결 실패:", error);
             }
-            
-            // 연결 끊김 처리
-            connection.onclose(function () {
-                updateConnectionStatus("연결이 끊어졌습니다.", false);
-            });
-            
-            // 재연결 시작
-            connection.onreconnecting(() => {
-                updateConnectionStatus("재연결 중...", false);
-            });
-            
-            // 재연결 완료
-            connection.onreconnected(() => {
-                updateConnectionStatus("재연결 완료!", true);
-            });
-            
-            return connection;
         }
-        
-        // 차트 업데이트 함수
+
+        // 차트 업데이트
         function updateChart(chart, value, label) {
             chart.data.labels.push(label);
             chart.data.datasets[0].data.push(value);
             
-            // 최대 20개 데이터 포인트만 유지
             if (chart.data.labels.length > 20) {
                 chart.data.labels.shift();
                 chart.data.datasets[0].data.shift();
@@ -722,29 +921,28 @@
             
             chart.update('none');
         }
-        
+
         // 차트들 업데이트
         function updateCharts(sensorData) {
             const time = new Date().toLocaleTimeString('ko-KR');
             
             if (sensorData.data.temperature !== undefined) {
                 updateChart(temperatureChart, sensorData.data.temperature, time);
-                statistics.totalTemperature += sensorData.data.temperature;
-                statistics.temperatureReadings++;
             }
             
             if (sensorData.data.humidity !== undefined) {
                 updateChart(humidityChart, sensorData.data.humidity, time);
-                statistics.totalHumidity += sensorData.data.humidity;
-                statistics.humidityReadings++;
+            }
+
+            if (sensorData.data.pm2_5 !== undefined) {
+                updateChart(particleChart, sensorData.data.pm2_5, time);
             }
         }
-        
+
         // 실시간 데이터 추가
         function addRealtimeData(sensorData) {
             const container = document.getElementById('realtimeData');
             
-            // 첫 번째 데이터인 경우 empty-state 제거
             if (container.querySelector('.empty-state')) {
                 container.innerHTML = '';
             }
@@ -752,141 +950,55 @@
             const dataItem = document.createElement('div');
             dataItem.className = 'data-item';
             
-            let values = '';
+            const typeInfo = getSensorTypeInfo(sensorData.sensorType);
+            let values = `${typeInfo.icon} `;
+            
             if (sensorData.data.temperature !== undefined) {
                 values += `🌡️ ${sensorData.data.temperature}°C `;
             }
             if (sensorData.data.humidity !== undefined) {
                 values += `💧 ${sensorData.data.humidity}% `;
             }
+            if (sensorData.data.pm2_5 !== undefined) {
+                values += `💨 ${sensorData.data.pm2_5}㎍/㎥ `;
+            }
+            if (sensorData.data.windSpeed !== undefined) {
+                values += `🌪️ ${sensorData.data.windSpeed}m/s `;
+            }
             
             dataItem.innerHTML = `
-                <div><strong>센서 ${sensorData.sensorId}</strong> (${sensorData.sensorUuid})</div>
+                <div><strong>${typeInfo.name} ${sensorData.sensorId}</strong></div>
                 <div class="data-values">${values}</div>
                 <div class="timestamp">${new Date().toLocaleString('ko-KR')}</div>
             `;
             
             container.insertBefore(dataItem, container.firstChild);
             
-            // 최대 10개 항목만 표시
             while (container.children.length > 10) {
                 container.removeChild(container.lastChild);
             }
         }
-        
-        // 센서 목록 업데이트
-        function updateSensorList(sensorData) {
-            sensorStates.set(sensorData.sensorId, {
-                ...sensorData,
-                lastUpdate: new Date(),
-                status: 'online'
-            });
-            
-            renderSensorList();
-        }
-        
-        // 센서 목록 렌더링
-        function renderSensorList() {
-            const container = document.getElementById('sensorList');
-            
-            if (sensorStates.size === 0) {
-                container.innerHTML = '<div class="empty-state">센서 데이터를 기다리는 중...</div>';
-                return;
-            }
-            
-            container.innerHTML = '';
-            
-            sensorStates.forEach((sensor, sensorId) => {
-                const timeSinceUpdate = new Date() - sensor.lastUpdate;
-                const isOffline = timeSinceUpdate > 60000; // 1분 이상 업데이트 없음
-                
-                const sensorItem = document.createElement('div');
-                sensorItem.className = `sensor-item ${isOffline ? 'offline' : ''}`;
-                
-                let values = '';
-                if (sensor.data.temperature !== undefined) {
-                    values += `${sensor.data.temperature}°C `;
-                }
-                if (sensor.data.humidity !== undefined) {
-                    values += `${sensor.data.humidity}%`;
-                }
-                
-                sensorItem.innerHTML = `
-                    <div class="sensor-info">
-                        <div class="sensor-name">센서 ${sensorId}</div>
-                        <div class="sensor-type">${sensor.sensorType} (${sensor.sensorUuid})</div>
-                    </div>
-                    <div class="sensor-values">
-                        <div class="sensor-value">${values}</div>
-                        <div class="sensor-time">${sensor.lastUpdate.toLocaleTimeString('ko-KR')}</div>
-                    </div>
-                `;
-                
-                container.appendChild(sensorItem);
-            });
-            
-            // 통계 업데이트
-            updateSensorStatistics();
-        }
-        
-        // 센서 통계 업데이트
-        function updateSensorStatistics() {
-            const totalSensors = sensorStates.size;
-            const onlineSensors = Array.from(sensorStates.values()).filter(s => {
-                const timeSinceUpdate = new Date() - s.lastUpdate;
-                return timeSinceUpdate < 60000;
-            }).length;
-            
-            document.getElementById('totalSensors').textContent = totalSensors;
-            document.getElementById('onlineSensors').textContent = onlineSensors;
-            
-            // 평균 온도/습도 계산
-            if (statistics.temperatureReadings > 0) {
-                const avgTemp = (statistics.totalTemperature / statistics.temperatureReadings).toFixed(1);
-                document.getElementById('avgTemperature').textContent = avgTemp + '°C';
-            }
-            
-            if (statistics.humidityReadings > 0) {
-                const avgHumidity = (statistics.totalHumidity / statistics.humidityReadings).toFixed(1);
-                document.getElementById('avgHumidity').textContent = avgHumidity + '%';
-            }
-        }
-        
-        // 통계 업데이트
-        function updateStatistics(sensorData) {
-            // 이미 updateCharts에서 처리됨
-        }
-        
-        // 시스템 상태 업데이트
-        function updateSystemStatus() {
-            document.getElementById('dataReceived').textContent = statistics.dataReceived;
-            document.getElementById('heartbeats').textContent = statistics.heartbeats;
-            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('ko-KR');
-            
-            // 가동 시간 계산
-            const uptime = new Date() - startTime;
-            const hours = Math.floor(uptime / (1000 * 60 * 60));
-            const minutes = Math.floor((uptime % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((uptime % (1000 * 60)) / 1000);
-            document.getElementById('uptime').textContent = 
-                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
-        
+
         // 유틸리티 함수들
+        function refreshCompanies() {
+            loadCompanies();
+        }
+
         function refreshSensors() {
-            renderSensorList();
+            if (selectedCompanyId) {
+                loadSensorsByCompany(selectedCompanyId);
+            }
         }
-        
+
         function clearSensorList() {
-            sensorStates.clear();
-            renderSensorList();
+            document.getElementById('sensorList').innerHTML = '<div class="empty-state">회사를 선택하여 센서를 확인하세요</div>';
         }
-        
+
         function clearRealtimeData() {
             const container = document.getElementById('realtimeData');
             container.innerHTML = '<div class="empty-state">실시간 데이터를 기다리는 중...</div>';
         }
-        
+
         function exportData() {
             const data = Array.from(sensorStates.entries()).map(([id, sensor]) => ({
                 sensorId: id,
@@ -906,7 +1018,7 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
-        
+
         // 초기화 함수
         async function initializeDashboard() {
             const token = await checkAuthentication();
@@ -928,11 +1040,11 @@
             // 차트 초기화
             initializeCharts();
             
+            // 회사 목록 로드
+            await loadCompanies();
+            
             // SignalR 연결 시작
             await startSignalRConnection(token);
-            
-            // 시스템 상태 업데이트 타이머
-            setInterval(updateSystemStatus, 1000);
         }
         
         // 페이지 로드 시 초기화
@@ -940,6 +1052,20 @@
             initializeDashboard();
         });
         
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            // 인증 관련 키만 지우고
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+            
+            // 세이브된 사용자 정보는 유지
+            // localStorage.removeItem('savedUsername');
+            // localStorage.removeItem('savedPassword');
+            // localStorage.removeItem('rememberMe');
+
+            // 로그인 페이지로 이동
+            window.location.href = '/login.html';
+        });
+
         // 페이지 언로드 시 연결 정리
         window.addEventListener('beforeunload', function() {
             if (connection) {

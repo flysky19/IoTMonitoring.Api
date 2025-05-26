@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>센서 그룹 관리</title>
+    <title>전체 센서 관리 - IoT 모니터링</title>
     <style>
-        /* 기본 스타일링 (dashboard.html과 유사) */
         * {
             margin: 0;
             padding: 0;
@@ -25,20 +24,81 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 14px;
+            text-decoration: none;
+        }
+        
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
         
         .container {
             padding: 2rem;
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
         
-        .card {
+        .filters-card {
             background: white;
-            border-radius: 10px;
             padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
             margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .filters-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            align-items: end;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .filter-group label {
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .filter-group select,
+        .filter-group input {
+            padding: 0.5rem;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: #667eea;
         }
         
         .btn {
@@ -48,318 +108,286 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            margin: 0.25rem;
+            font-size: 14px;
+            transition: background-color 0.3s;
         }
         
-        .btn:hover { background-color: #0056b3; }
-        .btn.danger { background-color: #dc3545; }
-        .btn.danger:hover { background-color: #c82333; }
-        .btn.success { background-color: #28a745; }
-        .btn.success:hover { background-color: #218838; }
+        .btn:hover {
+            background-color: #0056b3;
+        }
         
-        .group-grid {
+        .btn.secondary {
+            background-color: #6c757d;
+        }
+        
+        .btn.secondary:hover {
+            background-color: #545b62;
+        }
+        
+        .sensors-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
         }
         
-        .group-item {
-            background: #f8f9fa;
-            padding: 1rem;
-            border-radius: 8px;
-            border-left: 4px solid #007bff;
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        
-        .modal-content {
-            background-color: white;
-            margin: 15% auto;
-            padding: 20px;
+        .sensor-card {
+            background: white;
             border-radius: 10px;
-            width: 80%;
-            max-width: 500px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid #28a745;
         }
         
-        .form-group {
+        .sensor-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .sensor-card.offline {
+            border-left-color: #dc3545;
+        }
+        
+        .sensor-card.warning {
+            border-left-color: #ffc107;
+        }
+        
+        .sensor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
             margin-bottom: 1rem;
         }
         
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
+        .sensor-title {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sensor-name {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+        
+        .sensor-type {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .sensor-type-icon {
+            font-size: 1.3rem;
+        }
+        
+        .sensor-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
             font-weight: bold;
         }
         
-        .form-group input, .form-group textarea, .form-group select {
-            width: 100%;
+        .sensor-status.online {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .sensor-status.offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .sensor-status.unknown {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+        
+        .sensor-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .info-label {
+            color: #666;
+        }
+        
+        .info-value {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .sensor-data {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .data-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .data-values {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 0.5rem;
+        }
+        
+        .data-item {
+            text-align: center;
             padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            background: white;
+            border-radius: 5px;
+        }
+        
+        .data-label {
+            font-size: 0.7rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+        }
+        
+        .data-value {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .sensor-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background-color 0.3s;
+        }
+        
+        .action-btn.view {
+            background: #007bff;
+            color: white;
+        }
+        
+        .action-btn.view:hover {
+            background: #0056b3;
+        }
+        
+        .action-btn.control {
+            background: #28a745;
+            color: white;
+        }
+        
+        .action-btn.control:hover {
+            background: #1e7e34;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+            grid-column: 1 / -1;
+        }
+        
+        .empty-state h3 {
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        
+        .stats-bar {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .header {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .filters-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .sensors-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-buttons {
+                width: 100%;
+                justify-content: space-between;
+            }
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>🏢 센서 그룹 관리</h1>
-        <div>
-            <a href="/dashboard.html" class="btn">대시보드</a>
-            <button onclick="logout()" class="btn danger">로그아웃</button>
-        </div>
-    </div>
-    
-    <div class="container">
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h2>센서 그룹 목록</h2>
-                <button onclick="openCreateModal()" class="btn success">+ 새 그룹 추가</button>
-            </div>
-            
-            <div id="groupList" class="group-grid">
-                <!-- 그룹 목록이 여기에 표시됩니다 -->
-            </div>
-        </div>
-    </div>
-    
-    <!-- 그룹 생성/수정 모달 -->
-    <div id="groupModal" class="modal">
-        <div class="modal-content">
-            <h3 id="modalTitle">새 센서 그룹 추가</h3>
-            <form id="groupForm">
-                <div class="form-group">
-                    <label for="groupName">그룹 이름 *</label>
-                    <input type="text" id="groupName" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="location">위치</label>
-                    <input type="text" id="location">
-                </div>
-                
-                <div class="form-group">
-                    <label for="description">설명</label>
-                    <textarea id="description" rows="3"></textarea>
-                </div>
-                
-                <div style="text-align: right; margin-top: 1rem;">
-                    <button type="button" onclick="closeModal()" class="btn">취소</button>
-                    <button type="submit" class="btn success">저장</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        let currentEditId = null;
-        
-        // 인증 확인
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            window.location.href = '/login.html';
-        }
-        
-        // API 호출 헬퍼
-        async function apiCall(url, options = {}) {
-            const defaultOptions = {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            };
-            
-            const response = await fetch(url, { ...defaultOptions, ...options });
-            
-            if (response.status === 401) {
-                localStorage.clear();
-                window.location.href = '/login.html';
-                return;
-            }
-            
-            return response;
-        }
-        
-        // 센서 그룹 목록 로드
-        async function loadGroups() {
-            try {
-                const response = await apiCall('/api/sensor-groups');
-                const groups = await response.json();
-                
-                const container = document.getElementById('groupList');
-                container.innerHTML = '';
-                
-                if (groups.length === 0) {
-                    container.innerHTML = '<p>등록된 센서 그룹이 없습니다.</p>';
-                    return;
-                }
-                
-                groups.forEach(group => {
-                    const groupDiv = document.createElement('div');
-                    groupDiv.className = 'group-item';
-                    groupDiv.innerHTML = `
-                        <h3>${group.groupName}</h3>
-                        <p><strong>위치:</strong> ${group.location || '없음'}</p>
-                        <p><strong>설명:</strong> ${group.description || '없음'}</p>
-                        <p><strong>센서 수:</strong> ${group.sensorCount || 0}개</p>
-                        <p><strong>생성일:</strong> ${new Date(group.createdAt).toLocaleDateString('ko-KR')}</p>
-                        <div style="margin-top: 1rem;">
-                            <button onclick="editGroup(${group.groupID})" class="btn">수정</button>
-                            <button onclick="deleteGroup(${group.groupID})" class="btn danger">삭제</button>
-                            <button onclick="viewSensors(${group.groupID})" class="btn">센서 보기</button>
-                        </div>
-                    `;
-                    container.appendChild(groupDiv);
-                });
-            } catch (error) {
-                console.error('그룹 목록 로드 실패:', error);
-                alert('그룹 목록을 불러오는데 실패했습니다.');
-            }
-        }
-        
-        // 모달 열기/닫기
-        function openCreateModal() {
-            currentEditId = null;
-            document.getElementById('modalTitle').textContent = '새 센서 그룹 추가';
-            document.getElementById('groupForm').reset();
-            document.getElementById('groupModal').style.display = 'block';
-        }
-        
-        function closeModal() {
-            document.getElementById('groupModal').style.display = 'none';
-        }
-        
-        // 그룹 편집
-        async function editGroup(id) {
-            try {
-                const response = await apiCall(`/api/sensor-groups/${id}`);
-                const group = await response.json();
-                
-                currentEditId = id;
-                document.getElementById('modalTitle').textContent = '센서 그룹 수정';
-                document.getElementById('groupName').value = group.groupName;
-                document.getElementById('location').value = group.location || '';
-                document.getElementById('description').value = group.description || '';
-                document.getElementById('groupModal').style.display = 'block';
-            } catch (error) {
-                console.error('그룹 정보 로드 실패:', error);
-                alert('그룹 정보를 불러오는데 실패했습니다.');
-            }
-        }
-        
-        // 그룹 삭제
-        async function deleteGroup(id) {
-            if (!confirm('정말로 이 그룹을 삭제하시겠습니까?')) return;
-            
-            try {
-                await apiCall(`/api/sensor-groups/${id}`, { method: 'DELETE' });
-                alert('그룹이 삭제되었습니다.');
-                loadGroups();
-            } catch (error) {
-                console.error('그룹 삭제 실패:', error);
-                alert('그룹 삭제에 실패했습니다.');
-            }
-        }
-        
-        // 그룹 센서 보기
-        function viewSensors(id) {
-            window.open(`/group-sensors.html?groupId=${id}`, '_blank');
-        }
-        // 그룹 목록 렌더링 함수 수정
-        function renderGroupList() {
-            const container = document.getElementById('groupList');
-            
-            if (sensorGroups.length === 0) {
-                container.innerHTML = '<p>등록된 센서 그룹이 없습니다.</p>';
-                return;
-            }
-            
-            container.innerHTML = '';
-            
-            sensorGroups.forEach(group => {
-                const groupDiv = document.createElement('div');
-                groupDiv.className = 'group-item';
-                groupDiv.innerHTML = `
-                    <h3>${group.groupName}</h3>
-                    <p><strong>회사:</strong> ${group.companyName || '없음'}</p>
-                    <p><strong>위치:</strong> ${group.location || '없음'}</p>
-                    <p><strong>활성 상태:</strong> ${group.active ? '활성' : '비활성'}</p>
-                    <p><strong>센서 수:</strong> ${group.sensorCount || 0}개</p>
-                    <div style="margin-top: 1rem;">
-                        <button onclick="editGroup(${group.groupID})" class="btn">수정</button>
-                        <button onclick="deleteGroup(${group.groupID})" class="btn danger">삭제</button>
-                        <button onclick="viewSensors(${group.groupID})" class="btn">센서 보기</button>
-                    </div>
-                `;
-                container.appendChild(groupDiv);
-            });
-        }
-        
-        // 폼 제출
-        document.getElementById('groupForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = {
-                groupName: document.getElementById('groupName').value,
-                location: document.getElementById('location').value,
-                description: document.getElementById('description').value
-            };
-            
-            try {
-                let response;
-                if (currentEditId) {
-                    response = await apiCall(`/api/sensor-groups/${currentEditId}`, {
-                        method: 'PUT',
-                        body: JSON.stringify(formData)
-                    });
-                } else {
-                    response = await apiCall('/api/sensor-groups', {
-                        method: 'POST',
-                        body: JSON.stringify(formData)
-                    });
-                }
-                
-                if (response.ok) {
-                    alert(currentEditId ? '그룹이 수정되었습니다.' : '그룹이 생성되었습니다.');
-                    closeModal();
-                    loadGroups();
-                } else {
-                    const error = await response.json();
-                    alert('오류: ' + error.message);
-                }
-            } catch (error) {
-                console.error('그룹 저장 실패:', error);
-                alert('그룹 저장에 실패했습니다.');
-            }
-        });
-        
-        
-        // 로그아웃
-        function logout() {
-            localStorage.clear();
-            window.location.href = '/login.html';
-        }
-        
-        // 페이지 로드 시 그룹 목록 로드
-        document.addEventListener('DOMContentLoaded', loadGroups);
-        
-        // 모달 외부 클릭 시 닫기
-        window.onclick = function(event) {
-            const modal = document.getElementById('groupModal');
-            if (event.target === modal) {
-                closeModal();
-            }
-        };
-
-    </script>
-</body>
-</html>
+        <h1>🔍 전체 센서 관리</h1>
+        <div class="nav-buttons">
+            <a href="/dashboard.html" class="nav-btn">

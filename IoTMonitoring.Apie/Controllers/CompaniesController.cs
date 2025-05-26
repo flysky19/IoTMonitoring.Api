@@ -87,5 +87,9 @@ namespace IoTMonitoring.Api.Controllers
                 return NotFound($"Company with ID {id} not found");
             }
         }
+
+        // 기존 CompaniesController.cs에 추가할 메서드
+
+        
     }
 }

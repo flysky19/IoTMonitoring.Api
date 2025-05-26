@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using IoTMonitoring.Api.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,24 +15,46 @@ using IoTMonitoring.Api.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Mvc;
+using IoTMonitoring.Api.Utilities;
+using IoTMonitoring.Api.Data.RateLimit;
+using IoTMonitoring.Api.Middlewares;
+using IoTMonitoring.Api.Services.RateLimit;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ¼­ºñ½º µî·Ï
+try
+{
+    ConfigurationValidator.ValidateConfiguration(builder.Configuration);
+    Console.WriteLine("âœ… ì„¤ì • ê²€ì¦ ì™„ë£Œ");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"âŒ ì„¤ì • ì˜¤ë¥˜: {ex.Message}");
+    Environment.Exit(1); // ì˜ëª»ëœ ì„¤ì •ì´ë©´ ì•± ì‹œì‘ ì¤‘ë‹¨
+}
+
+// Rate limiting ì„œë¹„ìŠ¤ ì¶”ê°€
+builder.Services.AddRateLimiting(builder.Configuration);
+
+
+
+
+// ì„œë¹„ìŠ¤ ë“±ë¡
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// Swagger ¼³Á¤
+// Swagger ì„¤ì •
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "IoT Monitoring API",
         Version = "v1",
-        Description = "IoT ¼¾¼­ ¸ğ´ÏÅÍ¸µ ½Ã½ºÅÛ API"
+        Description = "IoT ì„¼ì„œ ëª¨ë‹ˆí„°ë§ ì‹œìŠ¤í…œ API"
     });
 
-    // JWT ÀÎÁõ ¼³Á¤
+    // JWT ì¸ì¦ ì„¤ì •
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
@@ -69,47 +91,47 @@ builder.Services.AddCors(options =>
     });
 });
 
-// »ç¿ëÀÚ Á¤ÀÇ ¼­ºñ½º µî·Ï (¼ø¼­ Áß¿ä!)
+// ì‚¬ìš©ì ì •ì˜ ì„œë¹„ìŠ¤ ë“±ë¡ (ìˆœì„œ ì¤‘ìš”!)
 try
 {
-    Console.WriteLine("µ¥ÀÌÅÍº£ÀÌ½º ¼³Á¤ Áß...");
+    Console.WriteLine("ë°ì´í„°ë² ì´ìŠ¤ ì„¤ì • ì¤‘...");
     builder.Services.ConfigureDatabase(builder.Configuration);
     //builder.Services.AddDbContext<ApplicationDbContext>(options =>
     //options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 
-    Console.WriteLine("·Î±ë ¼³Á¤ Áß...");
+    Console.WriteLine("ë¡œê¹… ì„¤ì • ì¤‘...");
     builder.Services.ConfigureLogging();
 
-    Console.WriteLine("¸ÅÆÛ ¼³Á¤ Áß...");
+    Console.WriteLine("ë§¤í¼ ì„¤ì • ì¤‘...");
     builder.Services.ConfigureMappers();
 
-    Console.WriteLine("¸®Æ÷ÁöÅä¸® ¼³Á¤ Áß...");
+    Console.WriteLine("ë¦¬í¬ì§€í† ë¦¬ ì„¤ì • ì¤‘...");
     builder.Services.ConfigureRepositories();
 
-    Console.WriteLine("¼­ºñ½º ¼³Á¤ Áß...");
+    Console.WriteLine("ì„œë¹„ìŠ¤ ì„¤ì • ì¤‘...");
     builder.Services.ConfigureServices();
 
-    Console.WriteLine("ÀÎÁõ ¼³Á¤ Áß...");
+    Console.WriteLine("ì¸ì¦ ì„¤ì • ì¤‘...");
     builder.Services.ConfigureAuthentication(builder.Configuration);
 
 
-    Console.WriteLine("¸ğµç ¼­ºñ½º µî·Ï ¿Ï·á!");
+    Console.WriteLine("ëª¨ë“  ì„œë¹„ìŠ¤ ë“±ë¡ ì™„ë£Œ!");
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"¼­ºñ½º µî·Ï Áß ¿À·ù: {ex.Message}");
-    Console.WriteLine($"½ºÅÃ Æ®·¹ÀÌ½º: {ex.StackTrace}");
+    Console.WriteLine($"ì„œë¹„ìŠ¤ ë“±ë¡ ì¤‘ ì˜¤ë¥˜: {ex.Message}");
+    Console.WriteLine($"ìŠ¤íƒ íŠ¸ë ˆì´ìŠ¤: {ex.StackTrace}");
     throw;
 }
 
-// SignalR ¼­ºñ½º µî·Ï
+// SignalR ì„œë¹„ìŠ¤ ë“±ë¡
 builder.Services.AddSignalR();
 builder.Services.AddScoped<ISignalRService, SignalRService>();
 
 var app = builder.Build();
 
-Console.WriteLine($"ÇöÀç È¯°æ: {app.Environment.EnvironmentName}");
+Console.WriteLine($"í˜„ì¬ í™˜ê²½: {app.Environment.EnvironmentName}");
 Console.WriteLine($"IsDevelopment: {app.Environment.IsDevelopment()}");
 
 if (app.Environment.IsDevelopment())
@@ -118,7 +140,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "IoT Monitoring API V1");
-        c.RoutePrefix = "swagger"; // Swagger¸¦ /swagger °æ·Î·Î Á¦ÇÑ
+        c.RoutePrefix = "swagger"; // Swaggerë¥¼ /swagger ê²½ë¡œë¡œ ì œí•œ
     });
 }
 
@@ -130,15 +152,12 @@ app.UseDefaultFiles(new DefaultFilesOptions
 });
 app.UseRouting();
 
-app.UseCors("AllowAll");
 app.UseHttpsRedirection();
+app.UseCors("AllowAll");
 
-app.UseAuthentication();
-app.UseAuthorization();
 
 app.MapGet("/debug", () => "API is running!");
 
-app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -146,14 +165,40 @@ using (var scope = app.Services.CreateScope())
     _ = Task.Run(async () => await mqttService.StartAsync());
 }
 
+app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseRateLimiting(); // â­ ì¸ì¦ ì „ì— ìœ„ì¹˜í•´ì•¼ í•¨
 
-Console.WriteLine("¾ÖÇÃ¸®ÄÉÀÌ¼ÇÀÌ ½ÃÀÛµÇ¾ú½À´Ï´Ù.");
+
+Console.WriteLine("ì• í”Œë¦¬ì¼€ì´ì…˜ì´ ì‹œì‘ë˜ì—ˆìŠµë‹ˆë‹¤.");
 Console.WriteLine($"Swagger URL: https://localhost:7051/swagger");
 Console.WriteLine($"Debug URL: https://localhost:7051/debug");
 
+app.UseAuthentication();
+app.UseAuthorization();
 
-// SignalR Hub ¿£µåÆ÷ÀÎÆ® ¸ÅÇÎ
-app.MapHub<SensorHub>("/sensorHub");
-
+app.MapControllers();
+app.MapHub<SensorHub>("/sensorHub");// SignalR Hub ì—”ë“œí¬ì¸íŠ¸ ë§¤í•‘
 
 app.Run();
+
+
+
+
+public static class RateLimitingExtensions
+{
+    public static IServiceCollection AddRateLimiting(this IServiceCollection services, IConfiguration configuration)
+    {
+        // ì„¤ì • ë°”ì¸ë”©
+        services.Configure<RateLimitOptions>(configuration.GetSection("RateLimit"));
+
+        // Rate limit ì„œë¹„ìŠ¤ ë“±ë¡
+        services.AddSingleton<IRateLimitService, MemoryRateLimitService>();
+
+        return services;
+    }
+
+    public static IApplicationBuilder UseRateLimiting(this IApplicationBuilder app)
+    {
+        return app.UseMiddleware<RateLimitingMiddleware>();
+    }
+}

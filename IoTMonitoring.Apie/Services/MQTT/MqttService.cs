@@ -346,7 +346,53 @@ namespace IoTMonitoring.Api.Services.MQTT
 
         private async Task ProcessStatusUpdate(string sensorUuid, string payload)
         {
-            _logger.LogInformation($"상태 업데이트: {sensorUuid} - {payload}");
+            try
+            {
+                _logger.LogInformation($"상태 업데이트: {sensorUuid} - {payload}");
+
+                using var scope = _scopeFactory.CreateScope();
+                var sensorService = scope.ServiceProvider.GetRequiredService<ISensorService>();
+                var signalRService = scope.ServiceProvider.GetRequiredService<ISignalRService>();
+
+                // 센서 UUID로 센서 조회
+                var sensors = await sensorService.GetAllSensorsAsync(null, null, null);
+                var sensor = sensors.FirstOrDefault(s => s.SensorUUID == sensorUuid);
+
+                if (sensor == null)
+                {
+                    _logger.LogWarning($"상태 업데이트 실패: 센서를 찾을 수 없음 - UUID: {sensorUuid}");
+                    return;
+                }
+
+                // JSON 형식으로 페이로드 파싱
+                var statusData = JsonSerializer.Deserialize<JsonElement>(payload);
+
+                // 연결 상태와 상태 메시지 추출
+                string connectionStatus = "online";
+                string statusMessage = null;
+
+                if (statusData.TryGetProperty("status", out var statusProp))
+                {
+                    connectionStatus = statusProp.GetString();
+                }
+
+                if (statusData.TryGetProperty("message", out var messageProp))
+                {
+                    statusMessage = messageProp.GetString();
+                }
+
+                // 센서 연결 상태 업데이트
+                await sensorService.UpdateSensorConnectionStatusAsync(sensor.SensorID, connectionStatus, statusMessage);
+
+                // SignalR을 통해 상태 변경을 클라이언트에 알림
+                await signalRService.SendSensorStatusUpdateAsync(sensor.SensorID, statusMessage);
+
+                _logger.LogInformation($"센서 상태 업데이트 처리 완료 - UUID: {sensorUuid}, Status: {connectionStatus}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"센서 상태 업데이트 처리 중 오류: {sensorUuid} - {ex.Message}");
+            }
         }
 
         private async Task OnConnected(MqttClientConnectedEventArgs e)
