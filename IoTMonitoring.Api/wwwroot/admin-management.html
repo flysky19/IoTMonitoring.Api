@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 페이지 - IoT 모니터링</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f6fa;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            .header h1 {
+                margin: 0;
+                font-size: 1.8rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+            .back-btn:hover {
+                background: rgba(255, 255, 255, 0.3);
+                transform: translateX(-3px);
+            }
+
+        /* 탭 스타일 */
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 1rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            background: white;
+            border: none;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+            .tab:hover {
+                background: #f8f9fa;
+            }
+
+            .tab.active {
+                color: #667eea;
+                background: #f8f9fa;
+            }
+
+                .tab.active::after {
+                    content: '';
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    height: 3px;
+                    background: #667eea;
+                }
+
+        .tab-icon {
+            font-size: 1.2rem;
+            margin-right: 0.5rem;
+        }
+
+        /* 탭 컨텐츠 */
+        .tab-content {
+            display: none;
+        }
+
+            .tab-content.active {
+                display: block;
+            }
+
+        /* 통계 카드 스타일 */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+
+            .stat-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            }
+
+            .stat-card.total {
+                border-left-color: #667eea;
+            }
+
+            .stat-card.active {
+                border-left-color: #28a745;
+            }
+
+            .stat-card.online {
+                border-left-color: #3498db;
+            }
+
+            .stat-card.offline {
+                border-left-color: #dc3545;
+            }
+
+            .stat-card.unregistered {
+                border-left-color: #ffc107;
+            }
+
+            .stat-card.users {
+                border-left-color: #3498db;
+            }
+
+            .stat-card.admins {
+                border-left-color: #e74c3c;
+            }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* 컨트롤 패널 */
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+            .control-row:last-child {
+                margin-bottom: 0;
+            }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+            max-width: 400px;
+        }
+
+            .search-box input {
+                flex: 1;
+                padding: 0.5rem 1rem;
+                border: 2px solid #e0e0e0;
+                border-radius: 5px;
+                font-size: 14px;
+                transition: border-color 0.3s;
+            }
+
+                .search-box input:focus {
+                    outline: none;
+                    border-color: #667eea;
+                }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+            .filter-group label {
+                font-weight: 500;
+                color: #333;
+                font-size: 0.9rem;
+            }
+
+            .filter-group select {
+                padding: 0.5rem;
+                border: 2px solid #e0e0e0;
+                border-radius: 5px;
+                font-size: 14px;
+                transition: border-color 0.3s;
+                background: white;
+            }
+
+                .filter-group select:focus {
+                    outline: none;
+                    border-color: #667eea;
+                }
+
+        .btn {
+            background-color: #007bff;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+            .btn:hover {
+                background-color: #0056b3;
+                transform: translateY(-2px);
+                box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+            }
+
+            .btn.success {
+                background-color: #28a745;
+            }
+
+                .btn.success:hover {
+                    background-color: #218838;
+                }
+
+            .btn.danger {
+                background-color: #dc3545;
+            }
+
+                .btn.danger:hover {
+                    background-color: #c82333;
+                }
+
+            .btn.secondary {
+                background-color: #6c757d;
+            }
+
+                .btn.secondary:hover {
+                    background-color: #545b62;
+                }
+
+            .btn.warning {
+                background-color: #ffc107;
+                color: #333;
+            }
+
+                .btn.warning:hover {
+                    background-color: #e0a800;
+                }
+
+        .btn-sm {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        /* 테이블 스타일 */
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .table-header {
+            padding: 1rem 1.5rem;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* 배지 스타일 */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+            .badge.active {
+                background-color: #d4edda;
+                color: #155724;
+            }
+
+            .badge.inactive {
+                background-color: #f8d7da;
+                color: #721c24;
+            }
+
+            .badge.admin {
+                background-color: #f3e5f5;
+                color: #6a1b9a;
+            }
+
+            .badge.user {
+                background-color: #e3f2fd;
+                color: #1565c0;
+            }
+
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 3% auto;
+            padding: 0;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            .modal-header h2 {
+                margin: 0;
+                font-size: 1.5rem;
+            }
+
+        .close {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: white;
+            background: none;
+            border: none;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+
+            .close:hover {
+                background-color: rgba(255, 255, 255, 0.2);
+            }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 0.5rem;
+                font-weight: 500;
+                color: #333;
+            }
+
+            .form-group input,
+            .form-group select {
+                width: 100%;
+                padding: 0.75rem;
+                border: 2px solid #e0e0e0;
+                border-radius: 5px;
+                font-size: 14px;
+                transition: border-color 0.3s;
+            }
+
+                .form-group input:focus,
+                .form-group select:focus {
+                    outline: none;
+                    border-color: #667eea;
+                }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #666;
+        }
+
+        /* 회사 카드 스타일 */
+        .company-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .company-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+
+            .company-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            }
+
+        .company-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 1.5rem;
+            border-bottom: 2px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .company-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .company-body {
+            padding: 1.5rem;
+        }
+
+        .company-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .company-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            text-align: center;
+            padding-top: 1rem;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .company-stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .company-stat-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+
+            .control-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚙️ 관리자 페이지</h1>
+        <button class="back-btn" onclick="goBack()">
+            ← 대시보드로 돌아가기
+        </button>
+    </div>
+
+    <!-- 탭 메뉴 -->
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('sensors')">
+            <span class="tab-icon">📡</span>센서 관리
+        </button>
+        <button class="tab" onclick="showTab('users')">
+            <span class="tab-icon">👥</span>사용자 관리
+        </button>
+        <button class="tab" onclick="showTab('companies')">
+            <span class="tab-icon">🏢</span>회사 관리
+        </button>
+    </div>
+
+    <!-- 센서 관리 탭 -->
+    <div id="sensors-tab" class="tab-content active">
+        <div class="stats-container">
+            <div class="stat-card total">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value" id="totalSensors">0</div>
+                <div class="stat-label">전체 센서</div>
+            </div>
+            <div class="stat-card active">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value" id="activeSensors">0</div>
+                <div class="stat-label">활성 센서</div>
+            </div>
+            <div class="stat-card online">
+                <div class="stat-icon">🟢</div>
+                <div class="stat-value" id="onlineSensors">0</div>
+                <div class="stat-label">온라인</div>
+            </div>
+            <div class="stat-card offline">
+                <div class="stat-icon">🔴</div>
+                <div class="stat-value" id="offlineSensors">0</div>
+                <div class="stat-label">오프라인</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-row">
+                <div class="search-box">
+                    <input type="text" id="sensorSearchInput" placeholder="센서명, UUID로 검색..." />
+                    <button class="btn" onclick="searchSensors()">🔍 검색</button>
+                </div>
+                <button class="btn success" onclick="alert('센서 추가 기능 구현 예정')">➕ 새 센서 추가</button>
+                <button class="btn secondary" onclick="loadSensors()">🔄 새로고침</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <span id="sensorCount">총 0개의 센서</span>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>센서 ID</th>
+                            <th>센서명</th>
+                            <th>타입</th>
+                            <th>상태</th>
+                            <th>연결 상태</th>
+                            <th>소속 회사</th>
+                            <th>마지막 통신</th>
+                            <th>작업</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sensorTableBody">
+                        <tr>
+                            <td colspan="8" class="empty-state">센서 목록을 불러오는 중...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 사용자 관리 탭 -->
+    <div id="users-tab" class="tab-content">
+        <div class="stats-container">
+            <div class="stat-card users">
+                <div class="stat-icon">👥</div>
+                <div class="stat-value" id="totalUsers">0</div>
+                <div class="stat-label">전체 사용자</div>
+            </div>
+            <div class="stat-card active">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value" id="activeUsers">0</div>
+                <div class="stat-label">활성 사용자</div>
+            </div>
+            <div class="stat-card admins">
+                <div class="stat-icon">👑</div>
+                <div class="stat-value" id="adminUsers">0</div>
+                <div class="stat-label">관리자</div>
+            </div>
+            <div class="stat-card inactive">
+                <div class="stat-icon">⏸️</div>
+                <div class="stat-value" id="inactiveUsers">0</div>
+                <div class="stat-label">비활성 사용자</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-row">
+                <div class="search-box">
+                    <input type="text" id="userSearchInput" placeholder="사용자명, 이메일로 검색..." />
+                    <button class="btn" onclick="searchUsers()">🔍 검색</button>
+                </div>
+                <button class="btn success" onclick="openAddUserModal()">➕ 새 사용자 추가</button>
+                <button class="btn secondary" onclick="loadUsers()">🔄 새로고침</button>
+            </div>
+
+            <div class="control-row">
+                <div class="filter-group">
+                    <input type="checkbox" id="showInactive" onchange="loadUsers()">
+                    <label for="showInactive">비활성 사용자 포함</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header">
+                <span id="userCount">총 0명의 사용자</span>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>사용자명</th>
+                            <th>이름</th>
+                            <th>이메일</th>
+                            <th>역할</th>
+                            <th>회사</th>
+                            <th>상태</th>
+                            <th>가입일</th>
+                            <th>작업</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody">
+                        <tr>
+                            <td colspan="9" class="empty-state">사용자 목록을 불러오는 중...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 회사 관리 탭 -->
+    <div id="companies-tab" class="tab-content">
+        <div class="stats-container">
+            <div class="stat-card total">
+                <div class="stat-icon">🏢</div>
+                <div class="stat-value" id="totalCompanies">0</div>
+                <div class="stat-label">전체 회사</div>
+            </div>
+            <div class="stat-card active">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value" id="activeCompanies">0</div>
+                <div class="stat-label">활성 회사</div>
+            </div>
+            <div class="stat-card inactive">
+                <div class="stat-icon">❌</div>
+                <div class="stat-value" id="inactiveCompanies">0</div>
+                <div class="stat-label">비활성 회사</div>
+            </div>
+            <div class="stat-card users">
+                <div class="stat-icon">👥</div>
+                <div class="stat-value" id="companyUsers">0</div>
+                <div class="stat-label">배정된 사용자</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-row">
+                <div class="search-box">
+                    <input type="text" id="companySearchInput" placeholder="회사명, 담당자로 검색..." />
+                    <button class="btn" onclick="searchCompanies()">🔍 검색</button>
+                </div>
+                <button class="btn success" onclick="openAddCompanyModal()">➕ 새 회사 추가</button>
+                <button class="btn secondary" onclick="loadCompanies()">🔄 새로고침</button>
+            </div>
+        </div>
+
+        <div class="company-grid" id="companyGrid">
+            <div class="empty-state">회사 목록을 불러오는 중...</div>
+        </div>
+    </div>
+
+    <!-- 사용자 추가/수정 모달 -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="userModalTitle">새 사용자 추가</h2>
+                <button class="close" onclick="closeUserModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <input type="hidden" id="userId">
+
+                    <div class="form-group">
+                        <label for="username">사용자명 *</label>
+                        <input type="text" id="username" required>
+                    </div>
+
+                    <div class="form-group" id="passwordGroup">
+                        <label for="password">비밀번호 *</label>
+                        <input type="password" id="password">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fullName">이름 *</label>
+                        <input type="text" id="fullName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">이메일 *</label>
+                        <input type="email" id="email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">전화번호</label>
+                        <input type="tel" id="phone">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="roles">역할 *</label>
+                        <select id="roles" multiple>
+                            <option value="Admin">관리자</option>
+                            <option value="User" selected>일반 사용자</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="companies">회사</label>
+                        <select id="companies" multiple>
+                            <!-- 동적으로 로드됨 -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <input type="checkbox" id="active" checked>
+                        <label for="active" style="display: inline; margin-left: 0.5rem;">활성 상태</label>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn secondary" onclick="closeUserModal()">취소</button>
+                        <button type="submit" class="btn">저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 비밀번호 리셋 모달 -->
+    <div id="resetPasswordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>비밀번호 리셋</h2>
+                <button class="close" onclick="closeResetModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="resetUserId">
+                <div class="form-group">
+                    <label for="newPassword">새 비밀번호 *</label>
+                    <input type="password" id="newPassword" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn secondary" onclick="closeResetModal()">취소</button>
+                    <button type="button" class="btn danger" onclick="resetPassword()">리셋</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 회사 추가/수정 모달 -->
+    <div id="companyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="companyModalTitle">새 회사 추가</h2>
+                <button class="close" onclick="closeCompanyModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="companyForm">
+                    <input type="hidden" id="companyId">
+
+                    <div class="form-group">
+                        <label for="companyName">회사명 *</label>
+                        <input type="text" id="companyName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="companyCode">회사 코드</label>
+                        <input type="text" id="companyCode">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="address">주소</label>
+                        <input type="text" id="address">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">전화번호</label>
+                        <input type="tel" id="phone">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="companyEmail">이메일</label>
+                        <input type="email" id="companyEmail">
+                    </div>
+
+                    <div class="form-group">
+                        <input type="checkbox" id="companyActive" checked>
+                        <label for="companyActive" style="display: inline; margin-left: 0.5rem;">활성 상태</label>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn secondary" onclick="closeCompanyModal()">취소</button>
+                        <button type="submit" class="btn">저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let sensors = [];
+        let users = [];
+        let companies = [];
+        let currentTab = 'sensors';
+
+        // 인증 토큰 가져오기
+        function getAuthToken() {
+            return localStorage.getItem('authToken');
+        }
+
+        // 대시보드로 돌아가기
+        function goBack() {
+            window.location.href = '/dashboard.html';
+        }
+
+        // 탭 전환
+        function showTab(tabName) {
+            // 모든 탭과 컨텐츠 숨기기
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            // 선택된 탭 활성화
+            event.target.closest('.tab').classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+
+            currentTab = tabName;
+
+            // 데이터 로드
+            if (tabName === 'sensors') {
+                loadSensors();
+            } else if (tabName === 'users') {
+                loadUsers();
+                loadCompanies();
+            } else if (tabName === 'companies') {
+                loadCompanies();
+            }
+        }
+
+        // === 센서 관리 함수들 ===
+        async function loadSensors() {
+            try {
+                const response = await fetch('/api/sensors', {
+                    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                });
+
+                if (response.ok) {
+                    sensors = await response.json();
+                    updateSensorStats();
+                    renderSensors();
+                }
+            } catch (error) {
+                console.error('센서 로드 실패:', error);
+            }
+        }
+
+        function updateSensorStats() {
+            document.getElementById('totalSensors').textContent = sensors.length;
+            document.getElementById('activeSensors').textContent = sensors.filter(s => s.status === 'active').length;
+            document.getElementById('onlineSensors').textContent = sensors.filter(s => s.connectionStatus === 'online').length;
+            document.getElementById('offlineSensors').textContent = sensors.filter(s => s.connectionStatus === 'offline').length;
+        }
+
+        function renderSensors() {
+            const tbody = document.getElementById('sensorTableBody');
+            const searchTerm = document.getElementById('sensorSearchInput').value.toLowerCase();
+
+            const filtered = sensors.filter(sensor =>
+                sensor.name?.toLowerCase().includes(searchTerm) ||
+                sensor.sensorUUID?.toLowerCase().includes(searchTerm)
+            );
+
+            document.getElementById('sensorCount').textContent = `총 ${filtered.length}개의 센서`;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">센서가 없습니다.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(sensor => `
+                    <tr>
+                        <td>${sensor.sensorID}</td>
+                        <td>${sensor.name || '-'}</td>
+                        <td><span class="badge">${sensor.sensorType}</span></td>
+                        <td><span class="badge ${sensor.status}">${sensor.status}</span></td>
+                        <td><span class="badge ${sensor.connectionStatus}">${sensor.connectionStatus}</span></td>
+                        <td>${sensor.groupName || '-'}</td>
+                        <td>${sensor.lastCommunication ? new Date(sensor.lastCommunication).toLocaleString('ko-KR') : '-'}</td>
+                        <td>
+                            <div class="actions">
+                                <button class="btn btn-sm" onclick="alert('센서 수정 기능 구현 예정')">수정</button>
+                                <button class="btn btn-sm danger" onclick="deleteSensor(${sensor.sensorID})">삭제</button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+        }
+
+        function searchSensors() {
+            renderSensors();
+        }
+
+        async function deleteSensor(sensorId) {
+            if (!confirm('정말로 이 센서를 삭제하시겠습니까?')) return;
+
+            try {
+                const response = await fetch(`/api/sensors/${sensorId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                });
+
+                if (response.ok) {
+                    alert('센서가 삭제되었습니다.');
+                    loadSensors();
+                }
+            } catch (error) {
+                alert('센서 삭제 실패: ' + error.message);
+            }
+        }
+
+        // === 사용자 관리 함수들 ===
+        async function loadUsers() {
+            const includeInactive = document.getElementById('showInactive').checked;
+
+            //try {
+            //    const response = await fetch(`/api/users?includeInactive=${includeInactive}`, {
+            //        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+            //    });
+
+            //    if (response.ok) {
+            //        users = await response.json();
+            //        updateUserStats();
+            //        renderUsers();
+            //    }
+            //} catch (error) {
+            //    console.error('사용자 로드 실패:', error);
+            //}
+            try {
+                // 디버깅을 위한 로그
+                console.log('Loading users...');
+                console.log('Token:', getAuthToken());
+                console.log('URL:', `/api/users?includeInactive=${includeInactive}`);
+
+                const response = await fetch(`/api/users?includeInactive=${includeInactive}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Received data:', data);
+
+                users = data;
+                updateUserStats();
+                renderUsers();
+
+            } catch (error) {
+                console.error('사용자 로드 실패:', error);
+                alert('사용자 목록을 불러오는데 실패했습니다.');
+            }
+        }
+        // getAuthToken 함수 확인
+        function getAuthToken() {
+            // localStorage 또는 sessionStorage에서 토큰 가져오기
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            console.log('Retrieved token:', token);
+            return token;
+        }
+        async function loadCompanies() {
+            try {
+                const response = await fetch('/api/companies', {
+                    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                });
+
+                if (response.ok) {
+                    companies = await response.json();
+                    updateCompanySelect();
+                }
+            } catch (error) {
+                console.error('회사 로드 실패:', error);
+            }
+        }
+
+        function updateCompanySelect() {
+            const select = document.getElementById('companies');
+            select.innerHTML = companies.map(company =>
+                `<option value="${company.companyID}">${company.name}</option>`
+            ).join('');
+        }
+
+        function updateUserStats() {
+            document.getElementById('totalUsers').textContent = users.length;
+            document.getElementById('activeUsers').textContent = users.filter(u => u.isActive).length;
+            document.getElementById('adminUsers').textContent = users.filter(u => u.role === 'Admin').length;
+            document.getElementById('inactiveUsers').textContent = users.filter(u => !u.isActive).length;
+        }
+
+        function renderUsers() {
+            const tbody = document.getElementById('userTableBody');
+            const searchTerm = document.getElementById('userSearchInput').value.toLowerCase();
+
+            const filtered = users.filter(user =>
+                user.username?.toLowerCase().includes(searchTerm) ||
+                user.email?.toLowerCase().includes(searchTerm) ||
+                user.name?.toLowerCase().includes(searchTerm)
+            );
+
+            document.getElementById('userCount').textContent = `총 ${filtered.length}명의 사용자`;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="empty-state">사용자가 없습니다.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(user => `
+                    <tr>
+                        <td>${user.userID}</td>
+                        <td>${user.username}</td>
+                        <td>${user.name || '-'}</td>
+                        <td>${user.email}</td>
+                        <td><span class="badge ${user.role?.toLowerCase()}">${user.role}</span></td>
+                        <td>${user.companyName || '-'}</td>
+                        <td><span class="badge ${user.isActive ? 'active' : 'inactive'}">${user.isActive ? '활성' : '비활성'}</span></td>
+                        <td>${new Date(user.createdAt).toLocaleDateString('ko-KR')}</td>
+                        <td>
+                            <div class="actions">
+                                <button class="btn btn-sm" onclick="editUser(${user.userID})">수정</button>
+                                <button class="btn btn-sm warning" onclick="showResetPasswordModal(${user.userID})">비밀번호</button>
+                                ${user.isActive ?
+                    `<button class="btn btn-sm danger" onclick="toggleUserStatus(${user.userID}, false)">비활성화</button>` :
+                    `<button class="btn btn-sm success" onclick="toggleUserStatus(${user.userID}, true)">활성화</button>`
+                }
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+        }
+
+        function searchUsers() {
+            renderUsers();
+        }
+
+        function openAddUserModal() {
+            document.getElementById('userModalTitle').textContent = '새 사용자 추가';
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = '';
+            document.getElementById('username').disabled = false;
+            document.getElementById('passwordGroup').style.display = 'block';
+            document.getElementById('password').required = true;
+            document.getElementById('userModal').style.display = 'block';
+        }
+
+        async function editUser(userId) {
+            try {
+                const response = await fetch(`/api/users/${userId}`, {
+                    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                });
+
+                if (response.ok) {
+                    const user = await response.json();
+
+                    document.getElementById('userModalTitle').textContent = '사용자 수정';
+                    document.getElementById('userId').value = user.userID;
+                    document.getElementById('username').value = user.username;
+                    document.getElementById('username').disabled = true;
+                    document.getElementById('passwordGroup').style.display = 'none';
+                    document.getElementById('password').required = false;
+                    document.getElementById('fullName').value = user.name || '';
+                    document.getElementById('email').value = user.email;
+                    document.getElementById('phone').value = user.phone || '';
+                    document.getElementById('active').checked = user.isActive;
+
+                    // 역할 설정
+                    const rolesSelect = document.getElementById('roles');
+                    Array.from(rolesSelect.options).forEach(option => {
+                        option.selected = user.role === option.value;
+                    });
+
+                    document.getElementById('userModal').style.display = 'block';
+                }
+            } catch (error) {
+                alert('사용자 정보 로드 실패: ' + error.message);
+            }
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').style.display = 'none';
+            document.getElementById('userForm').reset();
+        }
+
+        function showResetPasswordModal(userId) {
+            document.getElementById('resetUserId').value = userId;
+            document.getElementById('newPassword').value = '';
+            document.getElementById('resetPasswordModal').style.display = 'block';
+        }
+
+        function closeResetModal() {
+            document.getElementById('resetPasswordModal').style.display = 'none';
+        }
+
+        async function resetPassword() {
+            const userId = document.getElementById('resetUserId').value;
+            const newPassword = document.getElementById('newPassword').value;
+
+            if (!newPassword) {
+                alert('새 비밀번호를 입력하세요.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/users/${userId}/reset-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    },
+                    body: JSON.stringify({ newPassword })
+                });
+
+                if (response.ok) {
+                    alert('비밀번호가 리셋되었습니다.');
+                    closeResetModal();
+                }
+            } catch (error) {
+                alert('비밀번호 리셋 실패: ' + error.message);
+            }
+        }
+
+        async function toggleUserStatus(userId, activate) {
+            const action = activate ? '활성화' : '비활성화';
+
+            if (confirm(`정말로 이 사용자를 ${action}하시겠습니까?`)) {
+                try {
+                    const url = activate ? `/api/users/${userId}/activate` : `/api/users/${userId}`;
+                    const method = activate ? 'POST' : 'DELETE';
+
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                    });
+
+                    if (response.ok) {
+                        alert(`사용자가 ${action}되었습니다.`);
+                        loadUsers();
+                    }
+                } catch (error) {
+                    alert(`${action} 실패: ` + error.message);
+                }
+            }
+        }
+
+        // 사용자 폼 제출
+        document.getElementById('userForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const userId = document.getElementById('userId').value;
+            const isNew = !userId;
+
+            const userData = {
+                username: document.getElementById('username').value,
+                name: document.getElementById('fullName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                isActive: document.getElementById('active').checked,
+                role: document.getElementById('roles').value,
+                companyID: parseInt(document.getElementById('companies').value) || null
+            };
+
+            if (isNew) {
+                userData.password = document.getElementById('password').value;
+            }
+
+            try {
+                const response = await fetch(isNew ? '/api/users' : `/api/users/${userId}`, {
+                    method: isNew ? 'POST' : 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    },
+                    body: JSON.stringify(userData)
+                });
+
+                if (response.ok) {
+                    alert(isNew ? '사용자가 생성되었습니다.' : '사용자 정보가 수정되었습니다.');
+                    closeUserModal();
+                    loadUsers();
+                } else {
+                    const error = await response.text();
+                    alert('저장 실패: ' + error);
+                }
+            } catch (error) {
+                alert('저장 중 오류가 발생했습니다: ' + error.message);
+            }
+        });
+
+        // === 회사 관리 함수들 ===
+        async function loadCompanies() {
+            try {
+                const response = await fetch('/api/companies?includeInactive=true', {
+                    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                });
+
+                if (response.ok) {
+                    companies = await response.json();
+
+                    if (currentTab === 'companies') {
+                        updateCompanyStats();
+                        renderCompanies();
+                    } else if (currentTab === 'users') {
+                        updateCompanySelect();
+                    }
+                }
+            } catch (error) {
+                console.error('회사 로드 실패:', error);
+            }
+        }
+
+        function updateCompanyStats() {
+            document.getElementById('totalCompanies').textContent = companies.length;
+            document.getElementById('activeCompanies').textContent = companies.filter(c => c.isActive).length;
+            document.getElementById('inactiveCompanies').textContent = companies.filter(c => !c.isActive).length;
+
+            // 배정된 사용자 수 계산 (실제로는 API에서 가져와야 함)
+            document.getElementById('companyUsers').textContent = users.filter(u => u.companyID).length;
+        }
+
+        function renderCompanies() {
+            const grid = document.getElementById('companyGrid');
+            const searchTerm = document.getElementById('companySearchInput').value.toLowerCase();
+
+            const filtered = companies.filter(company =>
+                company.name?.toLowerCase().includes(searchTerm) ||
+                company.code?.toLowerCase().includes(searchTerm) ||
+                company.address?.toLowerCase().includes(searchTerm)
+            );
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="empty-state">회사가 없습니다.</div>';
+                return;
+            }
+
+            grid.innerHTML = filtered.map(company => `
+                    <div class="company-card">
+                        <div class="company-header">
+                            <div class="company-name">${company.name}</div>
+                            <span class="badge ${company.isActive ? 'active' : 'inactive'}">
+                                ${company.isActive ? '활성' : '비활성'}
+                            </span>
+                        </div>
+                        <div class="company-body">
+                            <div class="company-info">
+                                <div><strong>코드:</strong> ${company.code || '-'}</div>
+                                <div><strong>주소:</strong> ${company.address || '-'}</div>
+                                <div><strong>전화:</strong> ${company.phone || '-'}</div>
+                                <div><strong>이메일:</strong> ${company.email || '-'}</div>
+                            </div>
+                            <div class="company-stats">
+                                <div>
+                                    <div class="company-stat-value">${company.sensorCount || 0}</div>
+                                    <div class="company-stat-label">센서</div>
+                                </div>
+                                <div>
+                                    <div class="company-stat-value">${company.groupCount || 0}</div>
+                                    <div class="company-stat-label">그룹</div>
+                                </div>
+                                <div>
+                                    <div class="company-stat-value">${company.userCount || 0}</div>
+                                    <div class="company-stat-label">사용자</div>
+                                </div>
+                            </div>
+                            <div class="actions" style="margin-top: 1rem;">
+                                <button class="btn btn-sm" onclick="editCompany(${company.companyID})">수정</button>
+                                <button class="btn btn-sm danger" onclick="deleteCompany(${company.companyID})">삭제</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+        }
+
+        function searchCompanies() {
+            renderCompanies();
+        }
+
+        function openAddCompanyModal() {
+            document.getElementById('companyModalTitle').textContent = '새 회사 추가';
+            document.getElementById('companyForm').reset();
+            document.getElementById('companyId').value = '';
+            document.getElementById('companyModal').style.display = 'block';
+        }
+
+        async function editCompany(companyId) {
+            try {
+                const response = await fetch(`/api/companies/${companyId}`, {
+                    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                });
+
+                if (response.ok) {
+                    const company = await response.json();
+
+                    document.getElementById('companyModalTitle').textContent = '회사 수정';
+                    document.getElementById('companyId').value = company.companyID;
+                    document.getElementById('companyName').value = company.name;
+                    document.getElementById('companyCode').value = company.code || '';
+                    document.getElementById('address').value = company.address || '';
+                    document.getElementById('phone').value = company.phone || '';
+                    document.getElementById('companyEmail').value = company.email || '';
+                    document.getElementById('companyActive').checked = company.isActive;
+
+                    document.getElementById('companyModal').style.display = 'block';
+                }
+            } catch (error) {
+                alert('회사 정보 로드 실패: ' + error.message);
+            }
+        }
+
+        function closeCompanyModal() {
+            document.getElementById('companyModal').style.display = 'none';
+            document.getElementById('companyForm').reset();
+        }
+
+        async function deleteCompany(companyId) {
+            if (!confirm('정말로 이 회사를 삭제하시겠습니까?')) return;
+
+            try {
+                const response = await fetch(`/api/companies/${companyId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                });
+
+                if (response.ok) {
+                    alert('회사가 삭제되었습니다.');
+                    loadCompanies();
+                }
+            } catch (error) {
+                alert('회사 삭제 실패: ' + error.message);
+            }
+        }
+
+        // 회사 폼 제출
+        document.getElementById('companyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const companyId = document.getElementById('companyId').value;
+            const isNew = !companyId;
+
+            const companyData = {
+                name: document.getElementById('companyName').value,
+                code: document.getElementById('companyCode').value,
+                address: document.getElementById('address').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('companyEmail').value,
+                isActive: document.getElementById('companyActive').checked
+            };
+
+            try {
+                const response = await fetch(isNew ? '/api/companies' : `/api/companies/${companyId}`, {
+                    method: isNew ? 'POST' : 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    },
+                    body: JSON.stringify(companyData)
+                });
+
+                if (response.ok) {
+                    alert(isNew ? '회사가 생성되었습니다.' : '회사 정보가 수정되었습니다.');
+                    closeCompanyModal();
+                    loadCompanies();
+                } else {
+                    const error = await response.text();
+                    alert('저장 실패: ' + error);
+                }
+            } catch (error) {
+                alert('저장 중 오류가 발생했습니다: ' + error.message);
+            }
+        });
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSensors();
+        });
+
+        // 모달 외부 클릭 시 닫기
+        window.onclick = function (event) {
+            if (event.target == document.getElementById('userModal')) {
+                closeUserModal();
+            }
+            if (event.target == document.getElementById('resetPasswordModal')) {
+                closeResetModal();
+            }
+            if (event.target == document.getElementById('companyModal')) {
+                closeCompanyModal();
+            }
+        }
+    </script>
+</body>
+</html>

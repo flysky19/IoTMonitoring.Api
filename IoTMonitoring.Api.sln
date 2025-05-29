@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.13.35931.197 d17.13
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IoTMonitoring.Api", "IoTMonitoring.Apie\IoTMonitoring.Api.csproj", "{673F3FFE-3394-4F58-AFA3-8CD5ABFDE480}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IoTMonitoring.Api", "IoTMonitoring.Api\IoTMonitoring.Api.csproj", "{673F3FFE-3394-4F58-AFA3-8CD5ABFDE480}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
