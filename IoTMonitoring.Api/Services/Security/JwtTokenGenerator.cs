@@ -30,6 +30,7 @@ namespace IoTMonitoring.Api.Services.Security
                 new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role?.Trim()), // 중요! Role 클레임 추가
                 new Claim("fullName", user.FullName ?? string.Empty)
             };
 
@@ -76,7 +77,8 @@ namespace IoTMonitoring.Api.Services.Security
                 ValidateAudience = true,
                 ValidIssuer = _jwtSettings.Issuer,
                 ValidAudience = _jwtSettings.Audience,
-                ClockSkew = TimeSpan.Zero
+                ClockSkew = TimeSpan.Zero,
+                RoleClaimType = ClaimTypes.Role // Role 클레임 타입 명시
             };
 
             try
@@ -108,7 +110,9 @@ namespace IoTMonitoring.Api.Services.Security
         private string EncryptRefreshToken(RefreshTokenData data)
         {
             var json = JsonConvert.SerializeObject(data);
-            var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey.Substring(0, 32));
+            var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey.Length >= 32
+                ? _jwtSettings.SecretKey.Substring(0, 32)
+                : _jwtSettings.SecretKey.PadRight(32, '0'));
 
             using (var aes = Aes.Create())
             {
@@ -135,7 +139,9 @@ namespace IoTMonitoring.Api.Services.Security
 
         private string DecryptRefreshToken(string encryptedToken)
         {
-            var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey.Substring(0, 32));
+            var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey.Length >= 32
+              ? _jwtSettings.SecretKey.Substring(0, 32)
+              : _jwtSettings.SecretKey.PadRight(32, '0'));
             var encryptedBytes = Convert.FromBase64String(encryptedToken);
 
             using (var aes = Aes.Create())
@@ -148,17 +154,14 @@ namespace IoTMonitoring.Api.Services.Security
 
                 using (var decryptor = aes.CreateDecryptor(aes.Key, aes.IV))
                 {
-                    using (var ms = new System.IO.MemoryStream())
+                    using (var cs = new CryptoStream(
+                        new System.IO.MemoryStream(
+                            encryptedBytes, iv.Length, encryptedBytes.Length - iv.Length),
+                        decryptor,
+                        CryptoStreamMode.Read))
+                    using (var sr = new System.IO.StreamReader(cs))
                     {
-                        using (var cs = new CryptoStream(
-                            new System.IO.MemoryStream(
-                                encryptedBytes, iv.Length, encryptedBytes.Length - iv.Length),
-                            decryptor,
-                            CryptoStreamMode.Read))
-                        using (var sr = new System.IO.StreamReader(cs))
-                        {
-                            return sr.ReadToEnd();
-                        }
+                        return sr.ReadToEnd();
                     }
                 }
             }

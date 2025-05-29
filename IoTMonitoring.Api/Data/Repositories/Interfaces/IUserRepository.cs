@@ -22,5 +22,10 @@ namespace IoTMonitoring.Api.Data.Repositories.Interfaces
         Task<bool> UpdatePasswordAsync(int userId, string passwordHash);
         Task<bool> UpdateLastLoginAsync(int userId);
         Task<IEnumerable<User>> GetUsersByCompanyIdAsync(int companyId);
+
+        Task<bool> AssignCompanyToUserAsync(int userId, int companyId);
+        Task<bool> RemoveCompanyFromUserAsync(int userId, int companyId);
+        Task<bool> RemoveAllCompaniesFromUserAsync(int userId);
+        Task UpdateUserCompaniesAsync(int userId, List<int> companyIds);
     }
 }

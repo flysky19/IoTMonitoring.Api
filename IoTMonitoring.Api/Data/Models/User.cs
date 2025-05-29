@@ -10,11 +10,14 @@
         public string Phone { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? LastLogin { get; set; }
-
         public DateTime? UpdatedAt { get; set; }
-        
         public bool IsActive { get; set; }
 
-        public Company company { get; set; }
+        public string Role { get; set; }
+
+        public ICollection<UserCompany> UserCompanies { get; set; }
+        public List<Company> AssignedCompanies { get; set; } = new List<Company>();
+
+        public Company company => AssignedCompanies?.FirstOrDefault();
     }
 }

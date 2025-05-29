@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>³» Á¤º¸ - IoT ¸ğ´ÏÅÍ¸µ</title>
+    <title>ë‚´ ì •ë³´ - IoT ëª¨ë‹ˆí„°ë§</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
@@ -39,124 +39,141 @@
             margin: 2px;
             display: inline-block;
         }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
     </style>
 </head>
 <body>
-    <!-- ³×ºñ°ÔÀÌ¼Ç ¹Ù -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/dashboard">IoT ¸ğ´ÏÅÍ¸µ</a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/dashboard">´ë½Ãº¸µå</a>
-                <a class="nav-link active" href="/profile">³» Á¤º¸</a>
-                <a class="nav-link" href="/logout">·Î±×¾Æ¿ô</a>
-            </div>
+    <!-- ë¡œë”© í‘œì‹œ -->
+    <div id="loadingDiv" class="loading">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">ë¡œë”© ì¤‘...</span>
         </div>
-    </nav>
+    </div>
 
-    <div class="container mt-4">
-        <div class="row">
-            <div class="col-md-8 mx-auto">
-                <h2 class="mb-4">³» Á¤º¸</h2>
+    <!-- ë©”ì¸ ì»¨í…ì¸  (ì´ˆê¸°ì—ëŠ” ìˆ¨ê¹€) -->
+    <div id="mainContent" style="display: none;">
+        <!-- ë„¤ë¹„ê²Œì´ì…˜ ë°” -->
+        <nav class="navbar navbar-expand-lg navbar-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/dashboard.html">IoT ëª¨ë‹ˆí„°ë§</a>
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link" href="/dashboard.html">ëŒ€ì‹œë³´ë“œ</a>
+                    <a class="nav-link active" href="/user-profile.html">ë‚´ ì •ë³´</a>
+                    <a class="nav-link" href="#" onclick="logout()">ë¡œê·¸ì•„ì›ƒ</a>
+                </div>
+            </div>
+        </nav>
 
-                <!-- ±âº» Á¤º¸ ¼½¼Ç -->
-                <div class="profile-section">
-                    <h4>±âº» Á¤º¸</h4>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>»ç¿ëÀÚ¸í:</strong> <span id="displayUsername"></span></p>
-                            <p><strong>ÀÌ¸§:</strong> <span id="displayFullName"></span></p>
+        <div class="container mt-4">
+            <div class="row">
+                <div class="col-md-8 mx-auto">
+                    <h2 class="mb-4">ë‚´ ì •ë³´</h2>
+
+                    <!-- ê¸°ë³¸ ì •ë³´ ì„¹ì…˜ -->
+                    <div class="profile-section">
+                        <h4>ê¸°ë³¸ ì •ë³´</h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>ì‚¬ìš©ìëª…:</strong> <span id="displayUsername"></span></p>
+                                <p><strong>ì´ë¦„:</strong> <span id="displayFullName"></span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>ì´ë©”ì¼:</strong> <span id="displayEmail"></span></p>
+                                <p><strong>ì „í™”ë²ˆí˜¸:</strong> <span id="displayPhone"></span></p>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <p><strong>ÀÌ¸ŞÀÏ:</strong> <span id="displayEmail"></span></p>
-                            <p><strong>ÀüÈ­¹øÈ£:</strong> <span id="displayPhone"></span></p>
-                        </div>
+                        <button class="btn btn-primary" onclick="showEditProfileModal()">
+                            <i class="fas fa-edit"></i> ì •ë³´ ìˆ˜ì •
+                        </button>
                     </div>
-                    <button class="btn btn-primary" onclick="showEditProfileModal()">
-                        <i class="fas fa-edit"></i> Á¤º¸ ¼öÁ¤
-                    </button>
-                </div>
 
-                <!-- ±ÇÇÑ Á¤º¸ ¼½¼Ç -->
-                <div class="profile-section">
-                    <h4>±ÇÇÑ Á¤º¸</h4>
-                    <p><strong>¿ªÇÒ:</strong> <span id="displayRoles"></span></p>
-                    <p><strong>¼Ò¼Ó È¸»ç:</strong> <span id="displayCompanies"></span></p>
-                </div>
+                    <!-- ê¶Œí•œ ì •ë³´ ì„¹ì…˜ -->
+                    <div class="profile-section">
+                        <h4>ê¶Œí•œ ì •ë³´</h4>
+                        <p><strong>ì—­í• :</strong> <span id="displayRoles"></span></p>
+                        <p><strong>ì†Œì† íšŒì‚¬:</strong> <span id="displayCompanies"></span></p>
+                    </div>
 
-                <!-- º¸¾È ¼³Á¤ ¼½¼Ç -->
-                <div class="profile-section">
-                    <h4>º¸¾È ¼³Á¤</h4>
-                    <p><strong>¸¶Áö¸· ·Î±×ÀÎ:</strong> <span id="displayLastLogin"></span></p>
-                    <p><strong>°¡ÀÔÀÏ:</strong> <span id="displayCreatedAt"></span></p>
-                    <button class="btn btn-warning" onclick="showChangePasswordModal()">
-                        <i class="fas fa-key"></i> ºñ¹Ğ¹øÈ£ º¯°æ
-                    </button>
+                    <!-- ë³´ì•ˆ ì„¤ì • ì„¹ì…˜ -->
+                    <div class="profile-section">
+                        <h4>ë³´ì•ˆ ì„¤ì •</h4>
+                        <p><strong>ë§ˆì§€ë§‰ ë¡œê·¸ì¸:</strong> <span id="displayLastLogin"></span></p>
+                        <p><strong>ê°€ì…ì¼:</strong> <span id="displayCreatedAt"></span></p>
+                        <button class="btn btn-warning" onclick="showChangePasswordModal()">
+                            <i class="fas fa-key"></i> ë¹„ë°€ë²ˆí˜¸ ë³€ê²½
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ÇÁ·ÎÇÊ ¼öÁ¤ ¸ğ´Ş -->
+    <!-- í”„ë¡œí•„ ìˆ˜ì • ëª¨ë‹¬ -->
     <div class="modal fade" id="editProfileModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">³» Á¤º¸ ¼öÁ¤</h5>
+                    <h5 class="modal-title">ë‚´ ì •ë³´ ìˆ˜ì •</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="profileForm">
                         <div class="mb-3">
-                            <label for="fullName" class="form-label">ÀÌ¸§</label>
+                            <label for="fullName" class="form-label">ì´ë¦„</label>
                             <input type="text" class="form-control" id="fullName" required>
                         </div>
                         <div class="mb-3">
-                            <label for="email" class="form-label">ÀÌ¸ŞÀÏ</label>
+                            <label for="email" class="form-label">ì´ë©”ì¼</label>
                             <input type="email" class="form-control" id="email" required>
                         </div>
                         <div class="mb-3">
-                            <label for="phone" class="form-label">ÀüÈ­¹øÈ£</label>
+                            <label for="phone" class="form-label">ì „í™”ë²ˆí˜¸</label>
                             <input type="tel" class="form-control" id="phone">
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ãë¼Ò</button>
-                    <button type="button" class="btn btn-primary" onclick="updateProfile()">ÀúÀå</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ì·¨ì†Œ</button>
+                    <button type="button" class="btn btn-primary" onclick="updateProfile()">ì €ì¥</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ºñ¹Ğ¹øÈ£ º¯°æ ¸ğ´Ş -->
+    <!-- ë¹„ë°€ë²ˆí˜¸ ë³€ê²½ ëª¨ë‹¬ -->
     <div class="modal fade" id="changePasswordModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">ºñ¹Ğ¹øÈ£ º¯°æ</h5>
+                    <h5 class="modal-title">ë¹„ë°€ë²ˆí˜¸ ë³€ê²½</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="passwordForm">
                         <div class="mb-3">
-                            <label for="currentPassword" class="form-label">ÇöÀç ºñ¹Ğ¹øÈ£</label>
+                            <label for="currentPassword" class="form-label">í˜„ì¬ ë¹„ë°€ë²ˆí˜¸</label>
                             <input type="password" class="form-control" id="currentPassword" required>
                         </div>
                         <div class="mb-3">
-                            <label for="newPassword" class="form-label">»õ ºñ¹Ğ¹øÈ£</label>
+                            <label for="newPassword" class="form-label">ìƒˆ ë¹„ë°€ë²ˆí˜¸</label>
                             <input type="password" class="form-control" id="newPassword" required>
-                            <div class="form-text">ÃÖ¼Ò 8ÀÚ ÀÌ»ó, ¿µ¹®/¼ıÀÚ/Æ¯¼ö¹®ÀÚ Æ÷ÇÔ</div>
+                            <div class="form-text">ìµœì†Œ 8ì ì´ìƒ, ì˜ë¬¸/ìˆ«ì/íŠ¹ìˆ˜ë¬¸ì í¬í•¨</div>
                         </div>
                         <div class="mb-3">
-                            <label for="confirmPassword" class="form-label">»õ ºñ¹Ğ¹øÈ£ È®ÀÎ</label>
+                            <label for="confirmPassword" class="form-label">ìƒˆ ë¹„ë°€ë²ˆí˜¸ í™•ì¸</label>
                             <input type="password" class="form-control" id="confirmPassword" required>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Ãë¼Ò</button>
-                    <button type="button" class="btn btn-warning" onclick="changePassword()">º¯°æ</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ì·¨ì†Œ</button>
+                    <button type="button" class="btn btn-warning" onclick="changePassword()">ë³€ê²½</button>
                 </div>
             </div>
         </div>
@@ -166,69 +183,96 @@
     <script>
         let currentUser = null;
 
-        // ÆäÀÌÁö ·Îµå ½Ã
-        document.addEventListener('DOMContentLoaded', function() {
+        // í˜ì´ì§€ ë¡œë“œ ì‹œ ì¸ì¦ ì²´í¬
+        document.addEventListener('DOMContentLoaded', function () {
+            // í† í° í™•ì¸
+            const token = localStorage.getItem('authToken');
+
+            if (!token) {
+                alert('ë¡œê·¸ì¸ì´ í•„ìš”í•©ë‹ˆë‹¤.');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // í† í°ì´ ìˆìœ¼ë©´ ì‚¬ìš©ì í”„ë¡œí•„ ë¡œë“œ
             loadUserProfile();
         });
 
-        // »ç¿ëÀÚ ÇÁ·ÎÇÊ ·Îµå
+        // ì‚¬ìš©ì í”„ë¡œí•„ ë¡œë“œ
         async function loadUserProfile() {
             try {
                 const response = await fetch('/api/users/me', {
                     headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                        'Authorization': 'Bearer ' + localStorage.getItem('authToken')
                     }
                 });
 
                 if (response.ok) {
                     currentUser = await response.json();
                     displayUserProfile();
+
+                    // ë¡œë”© í™”ë©´ ìˆ¨ê¸°ê³  ë©”ì¸ ì»¨í…ì¸  í‘œì‹œ
+                    document.getElementById('loadingDiv').style.display = 'none';
+                    document.getElementById('mainContent').style.display = 'block';
+                } else if (response.status === 401) {
+                    // ì¸ì¦ ì‹¤íŒ¨
+                    localStorage.removeItem('authToken');
+                    alert('ì„¸ì…˜ì´ ë§Œë£Œë˜ì—ˆìŠµë‹ˆë‹¤. ë‹¤ì‹œ ë¡œê·¸ì¸í•´ì£¼ì„¸ìš”.');
+                    window.location.href = '/login.html';
                 } else {
-                    alert('ÇÁ·ÎÇÊÀ» ºÒ·¯¿À´Âµ¥ ½ÇÆĞÇß½À´Ï´Ù.');
+                    alert('í”„ë¡œí•„ì„ ë¶ˆëŸ¬ì˜¤ëŠ”ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.');
+                    window.location.href = '/dashboard.html';
                 }
             } catch (error) {
-                console.error('ÇÁ·ÎÇÊ ·Îµå ½ÇÆĞ:', error);
-                alert('ÇÁ·ÎÇÊÀ» ºÒ·¯¿À´Âµ¥ ½ÇÆĞÇß½À´Ï´Ù.');
+                console.error('í”„ë¡œí•„ ë¡œë“œ ì‹¤íŒ¨:', error);
+                alert('í”„ë¡œí•„ì„ ë¶ˆëŸ¬ì˜¤ëŠ”ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.');
+                window.location.href = '/dashboard.html';
             }
         }
 
-        // »ç¿ëÀÚ ÇÁ·ÎÇÊ Ç¥½Ã
+        // ì‚¬ìš©ì í”„ë¡œí•„ í‘œì‹œ
         function displayUserProfile() {
-            document.getElementById('displayUsername').textContent = currentUser.username;
-            document.getElementById('displayFullName').textContent = currentUser.fullName;
-            document.getElementById('displayEmail').textContent = currentUser.email;
+            document.getElementById('displayUsername').textContent = currentUser.username || '-';
+            document.getElementById('displayFullName').textContent = currentUser.fullName || '-';
+            document.getElementById('displayEmail').textContent = currentUser.email || '-';
             document.getElementById('displayPhone').textContent = currentUser.phone || '-';
 
-            // ¿ªÇÒ Ç¥½Ã
-            const rolesHtml = currentUser.roles.map(role =>
-                `<span class="role-badge">${role}</span>`
-            ).join(' ');
-            document.getElementById('displayRoles').innerHTML = rolesHtml;
+            // ì—­í•  í‘œì‹œ
+            if (currentUser.roles && currentUser.roles.length > 0) {
+                const rolesHtml = currentUser.roles.map(role =>
+                    `<span class="role-badge">${role}</span>`
+                ).join(' ');
+                document.getElementById('displayRoles').innerHTML = rolesHtml;
+            } else {
+                document.getElementById('displayRoles').innerHTML = '<span class="text-muted">ì—­í•  ì—†ìŒ</span>';
+            }
 
-            // È¸»ç Ç¥½Ã
-            const companiesHtml = currentUser.assignedCompanies && currentUser.assignedCompanies.length > 0
-                ? currentUser.assignedCompanies.map(company =>
+            // íšŒì‚¬ í‘œì‹œ
+            if (currentUser.assignedCompanies && currentUser.assignedCompanies.length > 0) {
+                const companiesHtml = currentUser.assignedCompanies.map(company =>
                     `<span class="company-badge">${company.name}</span>`
-                  ).join(' ')
-                : '<span class="text-muted">¼Ò¼Ó È¸»ç ¾øÀ½</span>';
-            document.getElementById('displayCompanies').innerHTML = companiesHtml;
+                ).join(' ');
+                document.getElementById('displayCompanies').innerHTML = companiesHtml;
+            } else {
+                document.getElementById('displayCompanies').innerHTML = '<span class="text-muted">ì†Œì† íšŒì‚¬ ì—†ìŒ</span>';
+            }
 
-            // ³¯Â¥ Ç¥½Ã
+            // ë‚ ì§œ í‘œì‹œ
             document.getElementById('displayLastLogin').textContent =
-                currentUser.lastLogin ? new Date(currentUser.lastLogin).toLocaleString() : '-';
+                currentUser.lastLogin ? new Date(currentUser.lastLogin).toLocaleString('ko-KR') : '-';
             document.getElementById('displayCreatedAt').textContent =
-                new Date(currentUser.createdAt).toLocaleDateString();
+                currentUser.createdAt ? new Date(currentUser.createdAt).toLocaleDateString('ko-KR') : '-';
         }
 
-        // ÇÁ·ÎÇÊ ¼öÁ¤ ¸ğ´Ş Ç¥½Ã
+        // í”„ë¡œí•„ ìˆ˜ì • ëª¨ë‹¬ í‘œì‹œ
         function showEditProfileModal() {
-            document.getElementById('fullName').value = currentUser.fullName;
-            document.getElementById('email').value = currentUser.email;
+            document.getElementById('fullName').value = currentUser.fullName || '';
+            document.getElementById('email').value = currentUser.email || '';
             document.getElementById('phone').value = currentUser.phone || '';
             new bootstrap.Modal(document.getElementById('editProfileModal')).show();
         }
 
-        // ÇÁ·ÎÇÊ ¾÷µ¥ÀÌÆ®
+        // í”„ë¡œí•„ ì—…ë°ì´íŠ¸
         async function updateProfile() {
             const profileData = {
                 fullName: document.getElementById('fullName').value,
@@ -241,7 +285,7 @@
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                        'Authorization': 'Bearer ' + localStorage.getItem('authToken')
                     },
                     body: JSON.stringify(profileData)
                 });
@@ -249,37 +293,37 @@
                 if (response.ok) {
                     bootstrap.Modal.getInstance(document.getElementById('editProfileModal')).hide();
                     loadUserProfile();
-                    alert('ÇÁ·ÎÇÊÀÌ ¼öÁ¤µÇ¾ú½À´Ï´Ù.');
+                    alert('í”„ë¡œí•„ì´ ìˆ˜ì •ë˜ì—ˆìŠµë‹ˆë‹¤.');
                 } else {
                     const error = await response.text();
-                    alert('ÇÁ·ÎÇÊ ¼öÁ¤ ½ÇÆĞ: ' + error);
+                    alert('í”„ë¡œí•„ ìˆ˜ì • ì‹¤íŒ¨: ' + error);
                 }
             } catch (error) {
-                console.error('ÇÁ·ÎÇÊ ¼öÁ¤ ½ÇÆĞ:', error);
-                alert('ÇÁ·ÎÇÊ ¼öÁ¤ Áß ¿À·ù°¡ ¹ß»ıÇß½À´Ï´Ù.');
+                console.error('í”„ë¡œí•„ ìˆ˜ì • ì‹¤íŒ¨:', error);
+                alert('í”„ë¡œí•„ ìˆ˜ì • ì¤‘ ì˜¤ë¥˜ê°€ ë°œìƒí–ˆìŠµë‹ˆë‹¤.');
             }
         }
 
-        // ºñ¹Ğ¹øÈ£ º¯°æ ¸ğ´Ş Ç¥½Ã
+        // ë¹„ë°€ë²ˆí˜¸ ë³€ê²½ ëª¨ë‹¬ í‘œì‹œ
         function showChangePasswordModal() {
             document.getElementById('passwordForm').reset();
             new bootstrap.Modal(document.getElementById('changePasswordModal')).show();
         }
 
-        // ºñ¹Ğ¹øÈ£ º¯°æ
+        // ë¹„ë°€ë²ˆí˜¸ ë³€ê²½
         async function changePassword() {
             const currentPassword = document.getElementById('currentPassword').value;
             const newPassword = document.getElementById('newPassword').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
 
-            // À¯È¿¼º °Ë»ç
+            // ìœ íš¨ì„± ê²€ì‚¬
             if (newPassword !== confirmPassword) {
-                alert('»õ ºñ¹Ğ¹øÈ£°¡ ÀÏÄ¡ÇÏÁö ¾Ê½À´Ï´Ù.');
+                alert('ìƒˆ ë¹„ë°€ë²ˆí˜¸ê°€ ì¼ì¹˜í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.');
                 return;
             }
 
             if (newPassword.length < 8) {
-                alert('ºñ¹Ğ¹øÈ£´Â ÃÖ¼Ò 8ÀÚ ÀÌ»óÀÌ¾î¾ß ÇÕ´Ï´Ù.');
+                alert('ë¹„ë°€ë²ˆí˜¸ëŠ” ìµœì†Œ 8ì ì´ìƒì´ì–´ì•¼ í•©ë‹ˆë‹¤.');
                 return;
             }
 
@@ -294,27 +338,38 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                        'Authorization': 'Bearer ' + localStorage.getItem('authToken')
                     },
                     body: JSON.stringify(passwordData)
                 });
 
                 if (response.ok) {
                     bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
-                    alert('ºñ¹Ğ¹øÈ£°¡ º¯°æµÇ¾ú½À´Ï´Ù. ´Ù½Ã ·Î±×ÀÎÇØÁÖ¼¼¿ä.');
-                    // ·Î±×¾Æ¿ô Ã³¸®
-                    localStorage.removeItem('token');
-                    window.location.href = '/login';
+                    alert('ë¹„ë°€ë²ˆí˜¸ê°€ ë³€ê²½ë˜ì—ˆìŠµë‹ˆë‹¤. ë‹¤ì‹œ ë¡œê·¸ì¸í•´ì£¼ì„¸ìš”.');
+                    // ë¡œê·¸ì•„ì›ƒ ì²˜ë¦¬
+                    logout();
                 } else if (response.status === 400) {
                     const error = await response.text();
                     alert(error);
                 } else {
-                    alert('ºñ¹Ğ¹øÈ£ º¯°æ ½ÇÆĞ');
+                    alert('ë¹„ë°€ë²ˆí˜¸ ë³€ê²½ ì‹¤íŒ¨');
                 }
             } catch (error) {
-                console.error('ºñ¹Ğ¹øÈ£ º¯°æ ½ÇÆĞ:', error);
-                alert('ºñ¹Ğ¹øÈ£ º¯°æ Áß ¿À·ù°¡ ¹ß»ıÇß½À´Ï´Ù.');
+                console.error('ë¹„ë°€ë²ˆí˜¸ ë³€ê²½ ì‹¤íŒ¨:', error);
+                alert('ë¹„ë°€ë²ˆí˜¸ ë³€ê²½ ì¤‘ ì˜¤ë¥˜ê°€ ë°œìƒí–ˆìŠµë‹ˆë‹¤.');
             }
+        }
+
+        // ë¡œê·¸ì•„ì›ƒ
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('username');
+            localStorage.removeItem('fullName');
+            localStorage.removeItem('expiration');
+            localStorage.removeItem('lastLogin');
+            window.location.href = '/login.html';
         }
     </script>
 </body>

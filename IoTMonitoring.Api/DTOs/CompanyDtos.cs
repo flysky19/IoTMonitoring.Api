@@ -11,6 +11,10 @@ namespace IoTMonitoring.Api.DTOs
         public string ContactPhone { get; set; }
         public string ContactEmail { get; set; }
         public bool Active { get; set; }
+
+        public int UserCount { get; set; }
+        public int SensorCount { get; set; }
+        public int GroupCount { get; set; }
     }
 
     // 업체 상세 정보 DTO
@@ -18,8 +22,6 @@ namespace IoTMonitoring.Api.DTOs
     {
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-        public int SensorGroupCount { get; set; }
-        public int ActiveSensorCount { get; set; }
     }
 
     // 업체 생성 DTO
@@ -30,7 +32,7 @@ namespace IoTMonitoring.Api.DTOs
         public string ContactPerson { get; set; }
         public string ContactPhone { get; set; }
         public string ContactEmail { get; set; }
-        public bool Active { get; set; } = true;
+        public bool Active { get; set; }
     }
 
     // 업체 업데이트 DTO
@@ -41,6 +43,13 @@ namespace IoTMonitoring.Api.DTOs
         public string ContactPerson { get; set; }
         public string ContactPhone { get; set; }
         public string ContactEmail { get; set; }
+        public bool Active { get; set; }
+    }
+
+    public class CompanySimpleDto
+    {
+        public int CompanyID { get; set; }
+        public string CompanyName { get; set; }
         public bool Active { get; set; }
     }
 }

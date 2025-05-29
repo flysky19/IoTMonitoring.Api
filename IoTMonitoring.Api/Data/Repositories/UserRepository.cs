@@ -15,7 +15,7 @@ namespace IoTMonitoring.Api.Data.Repositories
 
         public UserRepository(IDbConnectionFactory connectionFactory)
         {
-            _connectionFactory = connectionFactory;
+             _connectionFactory = connectionFactory;
         }
 
         public async Task<User> GetByIdAsync(int userId)
@@ -85,22 +85,36 @@ namespace IoTMonitoring.Api.Data.Repositories
             using (var connection = await _connectionFactory.CreateConnectionAsync())
             {
                 var sql = @"
-                    SELECT u.*, c.*
-                    FROM Users u
-                    LEFT JOIN Companies c ON u.CompanyID = c.CompanyID
-                    WHERE u.UserID = @UserID";
+            SELECT u.*, c.*
+            FROM Users u
+            LEFT JOIN UserCompanies uc ON u.UserID = uc.UserID
+            LEFT JOIN Companies c ON uc.CompanyID = c.CompanyID
+            WHERE u.UserID = @UserID";
+
+                var userDict = new Dictionary<int, User>();
 
                 var users = await connection.QueryAsync<User, Company, User>(
                     sql,
                     (user, company) =>
                     {
-                        user.company = company;
-                        return user;
+                        if (!userDict.TryGetValue(user.UserID, out var existingUser))
+                        {
+                            existingUser = user;
+                            existingUser.AssignedCompanies = new List<Company>();
+                            userDict.Add(user.UserID, existingUser);
+                        }
+
+                        if (company != null)
+                        {
+                            existingUser.AssignedCompanies.Add(company);
+                        }
+
+                        return existingUser;
                     },
                     new { UserID = userId },
                     splitOn: "CompanyID");
 
-                return users.FirstOrDefault();
+                return userDict.Values.FirstOrDefault();
             }
         }
 
@@ -109,9 +123,10 @@ namespace IoTMonitoring.Api.Data.Repositories
             using (var connection = await _connectionFactory.CreateConnectionAsync())
             {
                 var sql = @"
-                    SELECT u.*, c.*
-                    FROM Users u
-                    LEFT JOIN Companies c ON u.CompanyID = c.CompanyID";
+            SELECT u.*, c.*
+            FROM Users u
+            LEFT JOIN UserCompanies uc ON u.UserID = uc.UserID
+            LEFT JOIN Companies c ON uc.CompanyID = c.CompanyID";
 
                 if (!includeInactive)
                 {
@@ -122,16 +137,27 @@ namespace IoTMonitoring.Api.Data.Repositories
 
                 var userDict = new Dictionary<int, User>();
 
-                var users = await connection.QueryAsync<User, Company, User>(
+                await connection.QueryAsync<User, Company, User>(
                     sql,
                     (user, company) =>
                     {
-                        user.company = company;
-                        return user;
+                        if (!userDict.TryGetValue(user.UserID, out var existingUser))
+                        {
+                            existingUser = user;
+                            existingUser.AssignedCompanies = new List<Company>();
+                            userDict.Add(user.UserID, existingUser);
+                        }
+
+                        if (company != null)
+                        {
+                            existingUser.AssignedCompanies.Add(company);
+                        }
+
+                        return existingUser;
                     },
                     splitOn: "CompanyID");
 
-                return users;
+                return userDict.Values;
             }
         }
 
@@ -208,12 +234,16 @@ namespace IoTMonitoring.Api.Data.Repositories
         {
             using (var connection = await _connectionFactory.CreateConnectionAsync())
             {
+                //var rowsAffected = await connection.ExecuteAsync(
+                //    @"UPDATE Users 
+                //      SET Password = @PasswordHash, UpdatedAt = GETUTCDATE() 
+                //      WHERE UserID = @UserID",
+                //    new { UserID = userId, Password = passwordHash });
                 var rowsAffected = await connection.ExecuteAsync(
-                    @"UPDATE Users 
-                      SET PasswordHash = @PasswordHash, UpdatedAt = GETUTCDATE() 
-                      WHERE UserID = @UserID",
-                    new { UserID = userId, PasswordHash = passwordHash });
-
+                       @"UPDATE Users 
+                          SET Password = @Password, UpdatedAt = GETUTCDATE() 
+                          WHERE UserID = @UserID",
+                       new { UserID = userId, Password = passwordHash });
                 return rowsAffected > 0;
             }
         }
@@ -237,6 +267,94 @@ namespace IoTMonitoring.Api.Data.Repositories
                 return await connection.QueryAsync<User>(
                     "SELECT * FROM Users WHERE CompanyID = @CompanyID AND IsActive = 1",
                     new { CompanyID = companyId });
+            }
+        }
+
+        // 사용자에게 회사 할당
+        public async Task<bool> AssignCompanyToUserAsync(int userId, int companyId)
+        {
+            using (var connection = await _connectionFactory.CreateConnectionAsync())
+            {
+                // 이미 할당되어 있는지 확인
+                var exists = await connection.ExecuteScalarAsync<int>(
+                    @"SELECT COUNT(1) FROM UserCompanies 
+              WHERE UserID = @UserID AND CompanyID = @CompanyID",
+                    new { UserID = userId, CompanyID = companyId });
+
+                if (exists > 0)
+                    return false; // 이미 할당됨
+
+                var rowsAffected = await connection.ExecuteAsync(
+                    @"INSERT INTO UserCompanies (UserID, CompanyID, CreatedAt) 
+              VALUES (@UserID, @CompanyID, GETUTCDATE())",
+                    new { UserID = userId, CompanyID = companyId });
+
+                return rowsAffected > 0;
+            }
+        }
+
+        // 사용자에서 회사 할당 제거
+        public async Task<bool> RemoveCompanyFromUserAsync(int userId, int companyId)
+        {
+            using (var connection = await _connectionFactory.CreateConnectionAsync())
+            {
+                var rowsAffected = await connection.ExecuteAsync(
+                    @"DELETE FROM UserCompanies 
+              WHERE UserID = @UserID AND CompanyID = @CompanyID",
+                    new { UserID = userId, CompanyID = companyId });
+
+                return rowsAffected > 0;
+            }
+        }
+
+        // 사용자의 모든 회사 할당 제거
+        public async Task<bool> RemoveAllCompaniesFromUserAsync(int userId)
+        {
+            using (var connection = await _connectionFactory.CreateConnectionAsync())
+            {
+                var rowsAffected = await connection.ExecuteAsync(
+                    "DELETE FROM UserCompanies WHERE UserID = @UserID",
+                    new { UserID = userId });
+
+                return rowsAffected > 0;
+            }
+        }
+
+        // 사용자의 회사 목록 업데이트 (기존 것 모두 삭제 후 새로 추가)
+        public async Task UpdateUserCompaniesAsync(int userId, List<int> companyIds)
+        {
+            using (var connection = await _connectionFactory.CreateConnectionAsync())
+            {
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // 기존 할당 모두 제거
+                        await connection.ExecuteAsync(
+                            "DELETE FROM UserCompanies WHERE UserID = @UserID",
+                            new { UserID = userId },
+                            transaction);
+
+                        // 새로운 할당 추가
+                        if (companyIds != null && companyIds.Any())
+                        {
+                            var values = companyIds.Select(cid =>
+                                $"({userId}, {cid}, GETUTCDATE())").ToList();
+
+                            var sql = $@"INSERT INTO UserCompanies (UserID, CompanyID, CreatedAt) 
+                                VALUES {string.Join(", ", values)}";
+
+                            await connection.ExecuteAsync(sql, transaction: transaction);
+                        }
+
+                        transaction.Commit();
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
             }
         }
     }

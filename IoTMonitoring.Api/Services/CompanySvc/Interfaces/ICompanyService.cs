@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace IoTMonitoring.Api.Services.Interfaces
+namespace IoTMonitoring.Api.Services.CompanySvc.Interfaces
 {
     public interface ICompanyService
     {
@@ -12,7 +12,10 @@ namespace IoTMonitoring.Api.Services.Interfaces
         Task<CompanyDto> CreateCompanyAsync(CompanyCreateDto companyDto);
         Task UpdateCompanyAsync(int id, CompanyUpdateDto companyDto);
         Task DeactivateCompanyAsync(int id);
+        Task DeleteCompanyAsync(int id);
 
+        Task ActivateCompanyAsync(int id);
+        
         // 회사 센서 그룹 관리
         Task<IEnumerable<SensorGroupDto>> GetCompanySensorGroupsAsync(int companyId);
 

@@ -6,7 +6,7 @@ namespace IoTMonitoring.Api.Mappers.Interfaces
     public interface IUserMapper
     {
         UserDto ToDto(User user);
-        UserDetailDto ToDetailDto(User user);
+        UserDto ToDetailDto(User user);
         User ToEntity(UserCreateDto dto);
         void UpdateEntity(User user, UserUpdateDto dto);
         void UpdateEntity(User user, UserProfileUpdateDto dto);

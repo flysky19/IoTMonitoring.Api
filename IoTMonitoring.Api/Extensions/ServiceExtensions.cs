@@ -11,23 +11,22 @@ using IoTMonitoring.Api.Services.Security;
 using IoTMonitoring.Api.Services.Security.Interfaces;
 using IoTMonitoring.Api.Services.Security.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-using IoTMonitoring.Api.Data.Repositories.Interfaces;
 using IoTMonitoring.Api.Services.Sensor.Interfaces;
 using IoTMonitoring.Api.Services.Sensor;
 using IoTMonitoring.Api.Mappers.Interfaces;
 using IoTMonitoring.Api.Mappers;
 using IoTMonitoring.Api.Services.MQTT.Interfaces;
 using IoTMonitoring.Api.Services.MQTT;
-using IoTMonitoring.Api.Data.DbContext;
 using IoTMonitoring.Api.Services.SensorGroup.Interfaces;
 using IoTMonitoring.Api.Services.SensorGroup;
 using Microsoft.EntityFrameworkCore;
-using IoTMonitoring.Api.Services.UserSvc;
-using IoTMonitoring.Api.Services.UserSvc.Interfaces;
 using IoTMonitoring.Api.Services.UserSvr;
+using IoTMonitoring.Api.Services.UserSvr.Interfaces;
+using IoTMonitoring.Api.Services.Interfaces;
+using IoTMonitoring.Api.Services.CompanySvc.Interfaces;
+using IoTMonitoring.Api.Services.CompanySvc;
+using System.Security.Claims;
 
 namespace IoTMonitoring.Api.Extensions
 {
@@ -38,7 +37,6 @@ namespace IoTMonitoring.Api.Extensions
             // JWT 설정 추가
             var jwtSettingsSection = configuration.GetSection("JwtSettings");
             services.Configure<JwtSettings>(jwtSettingsSection);
-
             var jwtSettings = jwtSettingsSection.Get<JwtSettings>();
             var key = Encoding.ASCII.GetBytes(jwtSettings.SecretKey);
 
@@ -60,8 +58,35 @@ namespace IoTMonitoring.Api.Extensions
                     ValidateAudience = true,
                     ValidIssuer = jwtSettings.Issuer,
                     ValidAudience = jwtSettings.Audience,
-                    ClockSkew = TimeSpan.Zero
+                    ClockSkew = TimeSpan.Zero,
+
+                    // Role 클레임 타입 명시 - 이 부분이 중요!
+                    RoleClaimType = ClaimTypes.Role,
+                    NameClaimType = ClaimTypes.Name
                 };
+                // JWT 토큰 이벤트 핸들러 (디버깅용)
+                x.Events = new JwtBearerEvents
+                {
+                    OnAuthenticationFailed = context =>
+                    {
+                        Console.WriteLine($"Authentication failed: {context.Exception.Message}");
+                        return Task.CompletedTask;
+                    },
+                    OnTokenValidated = context =>
+                    {
+                        var claimsIdentity = context.Principal.Identity as ClaimsIdentity;
+                        if (claimsIdentity != null)
+                        {
+                            Console.WriteLine($"Token validated for user: {claimsIdentity.Name}");
+                            foreach (var claim in claimsIdentity.Claims)
+                            {
+                                Console.WriteLine($"Claim: {claim.Type} = {claim.Value}");
+                            }
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
+
             });
         }
 
@@ -80,7 +105,7 @@ namespace IoTMonitoring.Api.Extensions
                 services.AddScoped<ISensorGroupRepository, SensorGroupRepository>();
                 services.AddScoped<ISensorMqttTopicRepository, SensorMqttTopicRepository>();
                 services.AddScoped<ISensorConnectionHistoryRepository, SensorConnectionHistoryRepository>();
-
+                services.AddScoped<ICompanyRepository, CompanyRepository>();
 
                 Console.WriteLine("모든 리포지토리 등록 등록 완료");
             }
@@ -114,6 +139,7 @@ namespace IoTMonitoring.Api.Extensions
                 services.AddScoped<IMqttService, MqttService>();
 
                 //services.AddSingleton<ISensorDataService, SensorDataService>();
+                services.AddScoped<ICompanyService, CompanyService>();
 
                 Console.WriteLine("모든 비즈니스 서비스 등록 완료");
             }

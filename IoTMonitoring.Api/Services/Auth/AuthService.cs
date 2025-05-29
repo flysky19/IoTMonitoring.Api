@@ -60,7 +60,8 @@ namespace IoTMonitoring.Api.Services.Auth
                 UserId = user.UserID,
                 Username = user.Username,
                 FullName = user.FullName,
-                LastLogin = user.LastLogin.Value
+                LastLogin = user.LastLogin.Value,
+                Role = user.Role.Trim(), // 이 부분 확인
             };
         }
 

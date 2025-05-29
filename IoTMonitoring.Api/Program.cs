@@ -125,7 +125,7 @@ try
 
     Console.WriteLine("인증 설정 중...");
     builder.Services.ConfigureAuthentication(builder.Configuration);
-
+    builder.Services.AddAuthorization();
 
     Console.WriteLine("모든 서비스 등록 완료!");
 }

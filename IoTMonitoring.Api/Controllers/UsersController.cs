@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using IoTMonitoring.Api.DTOs;
 using System.Security.Claims;
-using IoTMonitoring.Api.Services.UserSvc.Interfaces;
+using IoTMonitoring.Api.Services.UserSvr.Interfaces;
 
 namespace IoTMonitoring.Api.Controllers
 {
@@ -22,6 +22,7 @@ namespace IoTMonitoring.Api.Controllers
         // 사용자 목록 조회 (관리자 전용)
         [HttpGet]
         [Authorize(Roles = "Admin")]
+        //[Authorize]
         public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers([FromQuery] bool includeInactive = false)
         {
             var users = await _userService.GetAllUsersAsync(includeInactive);
@@ -30,7 +31,8 @@ namespace IoTMonitoring.Api.Controllers
 
         // 사용자 상세 정보 조회
         [HttpGet("{id}")]
-        public async Task<ActionResult<UserDetailDto>> GetUser(int id)
+        [Authorize]
+        public async Task<ActionResult<UserDto>> GetUser(int id)
         {
             // 자신의 정보 또는 관리자만 조회 가능
             if (id != GetCurrentUserId() && !User.IsInRole("Admin"))
@@ -45,7 +47,7 @@ namespace IoTMonitoring.Api.Controllers
 
         // 현재 로그인한 사용자 정보 조회
         [HttpGet("me")]
-        public async Task<ActionResult<UserDetailDto>> GetCurrentUser()
+        public async Task<ActionResult<UserDto>> GetCurrentUser()
         {
             var userId = GetCurrentUserId();
             var user = await _userService.GetUserByIdAsync(userId);

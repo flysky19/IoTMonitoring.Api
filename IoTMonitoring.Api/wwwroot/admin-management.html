@@ -938,6 +938,20 @@
             window.location.href = '/dashboard.html';
         }
 
+        // 브라우저 콘솔에서 실행
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
         // 탭 전환
         function showTab(tabName) {
             // 모든 탭과 컨텐츠 숨기기
@@ -1046,24 +1060,9 @@
         async function loadUsers() {
             const includeInactive = document.getElementById('showInactive').checked;
 
-            //try {
-            //    const response = await fetch(`/api/users?includeInactive=${includeInactive}`, {
-            //        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
-            //    });
-
-            //    if (response.ok) {
-            //        users = await response.json();
-            //        updateUserStats();
-            //        renderUsers();
-            //    }
-            //} catch (error) {
-            //    console.error('사용자 로드 실패:', error);
-            //}
             try {
-                // 디버깅을 위한 로그
                 console.log('Loading users...');
                 console.log('Token:', getAuthToken());
-                console.log('URL:', `/api/users?includeInactive=${includeInactive}`);
 
                 const response = await fetch(`/api/users?includeInactive=${includeInactive}`, {
                     method: 'GET',
@@ -1074,7 +1073,12 @@
                 });
 
                 console.log('Response status:', response.status);
-                console.log('Response headers:', response.headers);
+
+                if (response.status === 401) {
+                    alert('인증이 만료되었습니다. 다시 로그인해주세요.');
+                    window.location.href = '/login.html';
+                    return;
+                }
 
                 if (!response.ok) {
                     const errorText = await response.text();
@@ -1091,7 +1095,13 @@
 
             } catch (error) {
                 console.error('사용자 로드 실패:', error);
-                alert('사용자 목록을 불러오는데 실패했습니다.');
+
+                // 더 자세한 에러 메시지
+                if (error.message.includes('Failed to fetch')) {
+                    alert('서버에 연결할 수 없습니다. API 서버가 실행 중인지 확인하세요.');
+                } else {
+                    alert(`사용자 목록을 불러오는데 실패했습니다: ${error.message}`);
+                }
             }
         }
         // getAuthToken 함수 확인
@@ -1103,16 +1113,60 @@
         }
         async function loadCompanies() {
             try {
-                const response = await fetch('/api/companies', {
-                    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                console.log('Loading companies...');
+                const token = getAuthToken();
+
+                if (!token) {
+                    console.error('No auth token found');
+                    alert('인증 토큰이 없습니다. 다시 로그인해주세요.');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                const response = await fetch('/api/companies?includeInactive=true', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
+
+                console.log('Companies response status:', response.status);
+
+                if (response.status === 401) {
+                    alert('인증이 만료되었습니다. 다시 로그인해주세요.');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                if (response.status === 403) {
+                    console.error('접근 권한이 없습니다.');
+                    // 회사 목록을 볼 권한이 없을 수 있으므로 빈 배열로 처리
+                    companies = [];
+                    if (currentTab === 'companies') {
+                        updateCompanyStats();
+                        renderCompanies();
+                    }
+                    return;
+                }
 
                 if (response.ok) {
                     companies = await response.json();
-                    updateCompanySelect();
+                    console.log('Loaded companies:', companies);
+
+                    if (currentTab === 'companies') {
+                        updateCompanyStats();
+                        renderCompanies();
+                    } else if (currentTab === 'users') {
+                        updateCompanySelect();
+                    }
+                } else {
+                    const errorText = await response.text();
+                    console.error('Failed to load companies:', errorText);
                 }
             } catch (error) {
                 console.error('회사 로드 실패:', error);
+                companies = [];
             }
         }
 
@@ -1148,27 +1202,27 @@
             }
 
             tbody.innerHTML = filtered.map(user => `
-                    <tr>
-                        <td>${user.userID}</td>
-                        <td>${user.username}</td>
-                        <td>${user.name || '-'}</td>
-                        <td>${user.email}</td>
-                        <td><span class="badge ${user.role?.toLowerCase()}">${user.role}</span></td>
-                        <td>${user.companyName || '-'}</td>
-                        <td><span class="badge ${user.isActive ? 'active' : 'inactive'}">${user.isActive ? '활성' : '비활성'}</span></td>
-                        <td>${new Date(user.createdAt).toLocaleDateString('ko-KR')}</td>
-                        <td>
-                            <div class="actions">
-                                <button class="btn btn-sm" onclick="editUser(${user.userID})">수정</button>
-                                <button class="btn btn-sm warning" onclick="showResetPasswordModal(${user.userID})">비밀번호</button>
-                                ${user.isActive ?
-                    `<button class="btn btn-sm danger" onclick="toggleUserStatus(${user.userID}, false)">비활성화</button>` :
-                    `<button class="btn btn-sm success" onclick="toggleUserStatus(${user.userID}, true)">활성화</button>`
-                }
-                            </div>
-                        </td>
-                    </tr>
-                `).join('');
+                <tr>
+                    <td>${user.userID}</td>
+                    <td>${user.username}</td>
+                    <td>${user.name || '-'}</td>
+                    <td>${user.email}</td>
+                    <td><span class="badge ${user.role?.toLowerCase()}">${user.role}</span></td>
+                    <td>${user.companyNames || user.companyName || '-'}</td>
+                    <td><span class="badge ${user.isActive ? 'active' : 'inactive'}">${user.isActive ? '활성' : '비활성'}</span></td>
+                    <td>${new Date(user.createdAt).toLocaleDateString('ko-KR')}</td>
+                    <td>
+                        <div class="actions">
+                            <button class="btn btn-sm" onclick="editUser(${user.userID})">수정</button>
+                            <button class="btn btn-sm warning" onclick="showResetPasswordModal(${user.userID})">비밀번호</button>
+                            ${user.isActive ?
+                                `<button class="btn btn-sm danger" onclick="toggleUserStatus(${user.userID}, false)">비활성화</button>` :
+                                `<button class="btn btn-sm success" onclick="toggleUserStatus(${user.userID}, true)">활성화</button>`
+                            }
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
         }
 
         function searchUsers() {
@@ -1364,8 +1418,8 @@
             const searchTerm = document.getElementById('companySearchInput').value.toLowerCase();
 
             const filtered = companies.filter(company =>
-                company.name?.toLowerCase().includes(searchTerm) ||
-                company.code?.toLowerCase().includes(searchTerm) ||
+                company.companyName?.toLowerCase().includes(searchTerm) ||
+                company.contactPerson?.toLowerCase().includes(searchTerm) ||
                 company.address?.toLowerCase().includes(searchTerm)
             );
 
@@ -1375,41 +1429,41 @@
             }
 
             grid.innerHTML = filtered.map(company => `
-                    <div class="company-card">
-                        <div class="company-header">
-                            <div class="company-name">${company.name}</div>
-                            <span class="badge ${company.isActive ? 'active' : 'inactive'}">
-                                ${company.isActive ? '활성' : '비활성'}
-                            </span>
-                        </div>
-                        <div class="company-body">
-                            <div class="company-info">
-                                <div><strong>코드:</strong> ${company.code || '-'}</div>
-                                <div><strong>주소:</strong> ${company.address || '-'}</div>
-                                <div><strong>전화:</strong> ${company.phone || '-'}</div>
-                                <div><strong>이메일:</strong> ${company.email || '-'}</div>
-                            </div>
-                            <div class="company-stats">
-                                <div>
-                                    <div class="company-stat-value">${company.sensorCount || 0}</div>
-                                    <div class="company-stat-label">센서</div>
-                                </div>
-                                <div>
-                                    <div class="company-stat-value">${company.groupCount || 0}</div>
-                                    <div class="company-stat-label">그룹</div>
-                                </div>
-                                <div>
-                                    <div class="company-stat-value">${company.userCount || 0}</div>
-                                    <div class="company-stat-label">사용자</div>
-                                </div>
-                            </div>
-                            <div class="actions" style="margin-top: 1rem;">
-                                <button class="btn btn-sm" onclick="editCompany(${company.companyID})">수정</button>
-                                <button class="btn btn-sm danger" onclick="deleteCompany(${company.companyID})">삭제</button>
-                            </div>
-                        </div>
+        <div class="company-card">
+            <div class="company-header">
+                <div class="company-name">${company.companyName}</div>
+                <span class="badge ${company.active ? 'active' : 'inactive'}">
+                    ${company.active ? '활성' : '비활성'}
+                </span>
+            </div>
+            <div class="company-body">
+                <div class="company-info">
+                    <div><strong>담당자:</strong> ${company.contactPerson || '-'}</div>
+                    <div><strong>주소:</strong> ${company.address || '-'}</div>
+                    <div><strong>전화:</strong> ${company.contactPhone || '-'}</div>
+                    <div><strong>이메일:</strong> ${company.contactEmail || '-'}</div>
+                </div>
+                <div class="company-stats">
+                    <div>
+                        <div class="company-stat-value">${company.sensorCount || 0}</div>
+                        <div class="company-stat-label">센서</div>
                     </div>
-                `).join('');
+                    <div>
+                        <div class="company-stat-value">${company.groupCount || 0}</div>
+                        <div class="company-stat-label">그룹</div>
+                    </div>
+                    <div>
+                        <div class="company-stat-value">${company.userCount || 0}</div>
+                        <div class="company-stat-label">사용자</div>
+                    </div>
+                </div>
+                <div class="actions" style="margin-top: 1rem;">
+                    <button class="btn btn-sm" onclick="editCompany(${company.companyID})">수정</button>
+                    <button class="btn btn-sm danger" onclick="deleteCompany(${company.companyID})">삭제</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
         }
 
         function searchCompanies() {
@@ -1470,6 +1524,46 @@
                 alert('회사 삭제 실패: ' + error.message);
             }
         }
+
+        // 회사 폼 필드도 수정
+        document.getElementById('companyForm').innerHTML = `
+    <input type="hidden" id="companyId">
+    
+    <div class="form-group">
+        <label for="companyName">회사명 *</label>
+        <input type="text" id="companyName" required>
+    </div>
+    
+    <div class="form-group">
+        <label for="contactPerson">담당자</label>
+        <input type="text" id="contactPerson">
+    </div>
+    
+    <div class="form-group">
+        <label for="address">주소</label>
+        <input type="text" id="address">
+    </div>
+    
+    <div class="form-group">
+        <label for="contactPhone">전화번호</label>
+        <input type="tel" id="contactPhone">
+    </div>
+    
+    <div class="form-group">
+        <label for="contactEmail">이메일</label>
+        <input type="email" id="contactEmail">
+    </div>
+    
+    <div class="form-group">
+        <input type="checkbox" id="companyActive" checked>
+        <label for="companyActive" style="display: inline; margin-left: 0.5rem;">활성 상태</label>
+    </div>
+    
+    <div class="form-actions">
+        <button type="button" class="btn secondary" onclick="closeCompanyModal()">취소</button>
+        <button type="submit" class="btn">저장</button>
+    </div>
+`;
 
         // 회사 폼 제출
         document.getElementById('companyForm').addEventListener('submit', async (e) => {

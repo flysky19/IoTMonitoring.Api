@@ -9,7 +9,8 @@ using IoTMonitoring.Api.Data.Repositories.Interfaces;
 using IoTMonitoring.Api.DTOs;
 using IoTMonitoring.Api.Services.Logging.Interfaces;
 using IoTMonitoring.Api.Mappers.Interfaces;
-using IoTMonitoring.Api.Services.UserSvc.Interfaces;
+using IoTMonitoring.Api.Services.Security.Interfaces;
+using IoTMonitoring.Api.Services.UserSvr.Interfaces;
 
 namespace IoTMonitoring.Api.Services.UserSvr
 {
@@ -18,14 +19,17 @@ namespace IoTMonitoring.Api.Services.UserSvr
         private readonly IUserRepository _userRepository;
         private readonly IUserMapper _userMapper;
         private readonly IAppLogger _logger;
+        private readonly IPasswordHasher _passwordHasher;
 
         public UserService(
             IUserRepository userRepository,
             IUserMapper userMapper,
+            IPasswordHasher passwordHasher,
             IAppLogger logger)
         {
             _userRepository = userRepository;
             _userMapper = userMapper;
+            _passwordHasher = passwordHasher;
             _logger = logger;
         }
 
@@ -38,9 +42,32 @@ namespace IoTMonitoring.Api.Services.UserSvr
                 _logger.LogInformation($"사용자 목록 조회 시작 - includeInactive: {includeInactive}");
 
                 var users = await _userRepository.GetUsersWithCompanyAsync(includeInactive);
-                var result = users.Select(_userMapper.ToDto).ToList();
+                
+                var result = users.Select(u => new UserDto
+                {
+                    UserID = u.UserID,
+                    Username = u.Username,
+                    Name = u.FullName,
+                    Email = u.Email,
+                    Role = u.Role,
+                    // 회사가 여러 개일 수 있으므로 첫 번째 회사명만 표시
+                    CompanyName = u.AssignedCompanies?.FirstOrDefault()?.CompanyName,
+                    CompanyID = u.AssignedCompanies?.FirstOrDefault()?.CompanyID,
+                    // 또는 모든 회사명을 콤마로 구분하여 표시
+                    CompanyNames = string.Join(", ", u.AssignedCompanies?.Select(c => c.CompanyName) ?? new List<string>()),
+                    IsActive = u.IsActive,
+                    CreatedAt = u.CreatedAt,
+                    AssignedCompanies = u.AssignedCompanies?.Select(c => new CompanyDto
+                    {
+                        CompanyID = c.CompanyID,
+                        CompanyName = c.CompanyName,
+                        Active = c.Active
+                    }).ToList()
+                });
 
-                _logger.LogInformation($"사용자 목록 조회 완료 - 조회된 사용자 수: {result.Count}");
+                var count = users.Select(_userMapper.ToDto).ToList();
+
+                _logger.LogInformation($"사용자 목록 조회 완료 - 조회된 사용자 수: {count.Count}");
                 return result;
             }
             catch (Exception ex)
@@ -50,13 +77,15 @@ namespace IoTMonitoring.Api.Services.UserSvr
             }
         }
 
-        public async Task<UserDetailDto> GetUserByIdAsync(int id)
+        public async Task<UserDto> GetUserByIdAsync(int id)
         {
             try
             {
                 _logger.LogInformation($"사용자 상세 조회 시작 - ID: {id}");
 
-                var user = await _userRepository.GetUserWithCompanyAsync(id);
+                //var user = await _userRepository.GetUserWithCompanyAsync(id);
+                var user = await _userRepository.GetByIdAsync(id);
+                
                 if (user == null)
                 {
                     throw new KeyNotFoundException($"사용자 ID {id}를 찾을 수 없습니다.");
@@ -299,7 +328,7 @@ namespace IoTMonitoring.Api.Services.UserSvr
                 }
 
                 // 비밀번호 업데이트
-                var newPasswordHash = HashPassword(passwordDto.NewPassword);
+                var newPasswordHash = _passwordHasher.HashPassword(passwordDto.NewPassword);
                 await _userRepository.UpdatePasswordAsync(userId, newPasswordHash);
 
                 _logger.LogInformation($"비밀번호 변경 완료 - UserID: {userId}");
@@ -323,7 +352,7 @@ namespace IoTMonitoring.Api.Services.UserSvr
                     throw new KeyNotFoundException($"사용자 ID {userId}를 찾을 수 없습니다.");
                 }
 
-                var passwordHash = HashPassword(newPassword);
+                var passwordHash = _passwordHasher.HashPassword(newPassword);
                 await _userRepository.UpdatePasswordAsync(userId, passwordHash);
 
                 _logger.LogInformation($"비밀번호 리셋 완료 - UserID: {userId}");
@@ -406,7 +435,7 @@ namespace IoTMonitoring.Api.Services.UserSvr
                     return null;
                 }
 
-                if (!VerifyPassword(password, user.Password))
+                if (!_passwordHasher.VerifyPassword(password, user.Password))
                 {
                     _logger.LogWarning($"인증 실패 - 잘못된 비밀번호: {username}");
                     return null;
@@ -432,7 +461,7 @@ namespace IoTMonitoring.Api.Services.UserSvr
                 var user = await _userRepository.GetByIdAsync(userId);
                 if (user == null) return false;
 
-                return VerifyPassword(password, user.Password);
+                return _passwordHasher.VerifyPassword(password, user.Password);
             }
             catch (Exception ex)
             {
@@ -453,22 +482,5 @@ namespace IoTMonitoring.Api.Services.UserSvr
 
         #endregion
 
-        #region Private 메서드
-
-        private string HashPassword(string password)
-        {
-            using (var sha256 = SHA256.Create())
-            {
-                byte[] hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                return Convert.ToBase64String(hashedBytes);
-            }
-        }
-
-        private bool VerifyPassword(string password, string passwordHash)
-        {
-            return HashPassword(password) == passwordHash;
-        }
-
-        #endregion
     }
 }

@@ -17,25 +17,24 @@ namespace IoTMonitoring.Api.Mappers
                 UserID = user.UserID,
                 Username = user.Username,
                 Email = user.Email,
-                FullName = user.FullName,
-                Active = user.IsActive,
-                //Roles = new[] { user.Role }
+                Name = user.FullName,
+                IsActive = user.IsActive,
+                Role = user.Role,
             };
         }
 
-        public UserDetailDto ToDetailDto(User user)
+        public UserDto ToDetailDto(User user)
         {
             if (user == null) return null;
 
-            return new UserDetailDto
+            return new UserDto
             {
                 UserID = user.UserID,
                 Username = user.Username,
                 Email = user.Email,
-                FullName = user.FullName,
+                Name = user.FullName,
                 Phone = user.Phone,
-                Active = user.IsActive,
-                //Roles = new[] { user.Role },
+                IsActive = user.IsActive,
                 CreatedAt = user.CreatedAt,
                 LastLogin = user.LastLogin,
                 AssignedCompanies = new List<CompanyDto>()

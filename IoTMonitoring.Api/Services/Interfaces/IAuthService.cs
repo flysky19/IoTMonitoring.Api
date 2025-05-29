@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace IoTMonitoring.Api.Services.Interfaces
 {
-    public interface IAuthService
+    public interface IAuthService2222
     {
         // 인증 관련 작업
         Task<AuthResultDto> LoginAsync(string username, string password);

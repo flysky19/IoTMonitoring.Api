@@ -10,7 +10,7 @@ namespace IoTMonitoring.Api.Controllers
 {
     [Route("api/sensors")]
     [ApiController]
-    //[Authorize]
+    [Authorize]
     public class SensorsController : ControllerBase
     {
         private readonly ISensorService _sensorService;
