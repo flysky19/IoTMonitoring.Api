@@ -46,8 +46,15 @@ namespace IoTMonitoring.Api.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<CompanyDto>> CreateCompany([FromBody] CompanyCreateDto companyDto)
         {
-            var createdCompany = await _companyService.CreateCompanyAsync(companyDto);
-            return CreatedAtAction(nameof(GetCompany), new { id = createdCompany.CompanyID }, createdCompany);
+            try
+            {
+                var createdCompany = await _companyService.CreateCompanyAsync(companyDto);
+                return CreatedAtAction(nameof(GetCompany), new { id = createdCompany.CompanyID }, createdCompany);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // 업체 정보 수정

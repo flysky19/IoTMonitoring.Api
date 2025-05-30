@@ -3,6 +3,7 @@ using System.Linq;
 using IoTMonitoring.Api.Data.Models;
 using IoTMonitoring.Api.DTOs;
 using IoTMonitoring.Api.Mappers.Interfaces;
+using Microsoft.AspNetCore.Identity;
 
 namespace IoTMonitoring.Api.Mappers
 {
@@ -17,9 +18,12 @@ namespace IoTMonitoring.Api.Mappers
                 UserID = user.UserID,
                 Username = user.Username,
                 Email = user.Email,
-                Name = user.FullName,
-                IsActive = user.IsActive,
+                FullName = user.FullName,
+                Phone = user.Phone,
                 Role = user.Role,
+                CompanyIDs = user.UserCompanies?.Select(uc => uc.CompanyID).ToList() ?? new List<int>(),
+                IsActive = user.IsActive,
+                CreatedAt = user.CreatedAt
             };
         }
 
@@ -32,29 +36,38 @@ namespace IoTMonitoring.Api.Mappers
                 UserID = user.UserID,
                 Username = user.Username,
                 Email = user.Email,
-                Name = user.FullName,
+                FullName = user.FullName,
                 Phone = user.Phone,
+                Role = user.Role,  // 단일 역할
+                CompanyIDs = user.UserCompanies.Select(uc => uc.CompanyID).ToList(),
                 IsActive = user.IsActive,
-                CreatedAt = user.CreatedAt,
-                LastLogin = user.LastLogin,
-                AssignedCompanies = new List<CompanyDto>()
+                CreatedAt = user.CreatedAt
             };
         }
 
-        public User ToEntity(UserCreateDto dto)
+        public User ToEntity(UserCreateDto userDto)
         {
-            if (dto == null) return null;
+            if (userDto == null) return null;
 
             return new User
             {
-                Username = dto.Username,
-                Email = dto.Email,
-                FullName = dto.FullName,
-                Phone = dto.Phone,
-                //Role = dto.Roles?.FirstOrDefault() ?? "User",
-                //CompanyID = dto.CompanyIDs?.FirstOrDefault(),
-                IsActive = dto.Active,
-                CreatedAt = DateTime.UtcNow
+                //Username = dto.Username,
+                //Email = dto.Email,
+                //FullName = dto.FullName,
+                //Phone = dto.Phone,
+                ////Role = dto.Roles?.FirstOrDefault() ?? "User",
+                ////CompanyID = dto.CompanyIDs?.FirstOrDefault(),
+                //IsActive = dto.Active,
+                //CreatedAt = DateTime.UtcNow
+                Username = userDto.Username,
+                Password = userDto.Password,
+                Email = userDto.Email,
+                FullName = userDto.FullName,
+                Phone = userDto.Phone,
+                Role = userDto.Role,  // 단일 역할
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
         }
 
@@ -65,9 +78,9 @@ namespace IoTMonitoring.Api.Mappers
             user.Email = dto.Email ?? user.Email;
             user.FullName = dto.FullName ?? user.FullName;
             user.Phone = dto.Phone ?? user.Phone;
-            user.IsActive = dto.Active;
-            //user.Role = dto.Roles?.FirstOrDefault() ?? user.Role;
-            //user.CompanyID = dto.CompanyIDs?.FirstOrDefault();
+            user.IsActive = dto.IsActive;
+            user.Role = dto.Role == null ? user.Role : "User";
+            //user.com = dto.CompanyIDs?.FirstOrDefault();
             user.UpdatedAt = DateTime.UtcNow;
         }
 

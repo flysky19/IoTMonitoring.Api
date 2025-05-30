@@ -225,22 +225,79 @@ namespace IoTMonitoring.Api.Services.CompanySvc
 
         Task<CompanyDetailDto> ICompanyService.GetCompanyByIdAsync(int id)
         {
-            throw new NotImplementedException();
+            return GetCompanyDetailAsync(id);
         }
 
-        public Task<IEnumerable<SensorGroupDto>> GetCompanySensorGroupsAsync(int companyId)
+        public async Task<IEnumerable<SensorGroupDto>> GetCompanySensorGroupsAsync(int companyId)
         {
-            throw new NotImplementedException();
+            // 회사 존재 여부 확인
+            var company = await _companyRepository.GetByIdAsync(companyId);
+            if (company == null)
+                throw new KeyNotFoundException($"Company with ID {companyId} not found");
+
+            // Repository에서 센서 그룹 가져오기
+            var sensorGroups = await _companyRepository.GetSensorGroupsByCompanyIdAsync(companyId);
+
+            // DTO로 변환
+            var sensorGroupDtos = sensorGroups.Select(sg => new SensorGroupDetailDto
+            {
+                GroupID = sg.GroupID,
+                GroupName = sg.GroupName,
+                Description = sg.Description,
+                CompanyID = sg.CompanyID,
+                CompanyName = company.CompanyName,
+                IsActive = sg.Active,
+                CreatedAt = sg.CreatedAt,
+                UpdatedAt = sg.UpdatedAt,
+                SensorCount = sg.Sensors?.Count ?? 0
+            }).ToList();
+
+            return sensorGroupDtos;
         }
 
-        public Task<IEnumerable<UserDto>> GetCompanyUsersAsync(int companyId)
+        public async Task<IEnumerable<UserDto>> GetCompanyUsersAsync(int companyId)
         {
-            throw new NotImplementedException();
+            // 회사 존재 여부 확인
+            var company = await _companyRepository.GetByIdAsync(companyId);
+            if (company == null)
+                throw new KeyNotFoundException($"Company with ID {companyId} not found");
+
+            // Repository에서 사용자 가져오기
+            var users = await _companyRepository.GetUsersByCompanyIdAsync(companyId);
+
+            // DTO로 변환
+            var userDtos = users.Select(u => new UserDto
+            {
+                UserID = u.UserID,
+                Username = u.Username,
+                Email = u.Email,
+                FullName = u.FullName,
+                Phone = u.Phone,
+                Role = u.Role,
+                IsActive = u.IsActive,
+                CreatedAt = u.CreatedAt,
+                LastLogin = u.LastLogin,
+                CompanyIDs = u.UserCompanies?.Select(uc => uc.CompanyID).ToList() ?? new List<int>(),
+            }).ToList();
+
+            return userDtos;
         }
 
-        public Task<int> GetSensorCountByCompanyAsync(int companyId, bool activeOnly = true)
+        public async Task<int> GetSensorCountByCompanyAsync(int companyId, bool activeOnly = true)
         {
-            throw new NotImplementedException();
+            var exists = await _companyRepository.ExistsAsync(companyId);
+            if (!exists)
+                throw new KeyNotFoundException($"Company with ID {companyId} not found");
+
+            // Repository에서 센서 개수 가져오기
+            if (activeOnly)
+            {
+                return await _companyRepository.GetActiveSensorCountByCompanyIdAsync(companyId);
+            }
+            else
+            {
+                return await _companyRepository.GetSensorCountByCompanyIdAsync(companyId);
+            }
         }
     }
 }

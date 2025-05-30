@@ -17,7 +17,7 @@ namespace IoTMonitoring.Api.Mappers
                 CompanyName = entity.Company?.CompanyName, // Navigation property 사용
                 GroupName = entity.GroupName,
                 Location = entity.Location,
-                Active = entity.Active,
+                IsActive = entity.Active,
                 SensorCount = 0 // Service에서 별도 계산
             };
         }
@@ -34,7 +34,7 @@ namespace IoTMonitoring.Api.Mappers
                 GroupName = entity.GroupName,
                 Location = entity.Location,
                 Description = entity.Description,
-                Active = entity.Active,
+                IsActive = entity.Active,
                 CreatedAt = entity.CreatedAt,
                 UpdatedAt = entity.UpdatedAt,
                 SensorCount = 0, // Service에서 별도 계산

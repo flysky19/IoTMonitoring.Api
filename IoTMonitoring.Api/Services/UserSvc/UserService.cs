@@ -42,33 +42,25 @@ namespace IoTMonitoring.Api.Services.UserSvr
                 _logger.LogInformation($"사용자 목록 조회 시작 - includeInactive: {includeInactive}");
 
                 var users = await _userRepository.GetUsersWithCompanyAsync(includeInactive);
-                
-                var result = users.Select(u => new UserDto
+
+                var userDtos = users.Select(u => new UserDto
                 {
                     UserID = u.UserID,
                     Username = u.Username,
-                    Name = u.FullName,
+                    FullName = u.FullName,  // Name → FullName으로 수정
                     Email = u.Email,
+                    Phone = u.Phone,
                     Role = u.Role,
-                    // 회사가 여러 개일 수 있으므로 첫 번째 회사명만 표시
-                    CompanyName = u.AssignedCompanies?.FirstOrDefault()?.CompanyName,
-                    CompanyID = u.AssignedCompanies?.FirstOrDefault()?.CompanyID,
-                    // 또는 모든 회사명을 콤마로 구분하여 표시
-                    CompanyNames = string.Join(", ", u.AssignedCompanies?.Select(c => c.CompanyName) ?? new List<string>()),
+                    CompanyIDs = u.UserCompanies?.Select(uc => uc.CompanyID).ToList() ?? new List<int>(),
                     IsActive = u.IsActive,
                     CreatedAt = u.CreatedAt,
-                    AssignedCompanies = u.AssignedCompanies?.Select(c => new CompanyDto
-                    {
-                        CompanyID = c.CompanyID,
-                        CompanyName = c.CompanyName,
-                        Active = c.Active
-                    }).ToList()
-                });
+
+                }).ToList();
 
                 var count = users.Select(_userMapper.ToDto).ToList();
 
                 _logger.LogInformation($"사용자 목록 조회 완료 - 조회된 사용자 수: {count.Count}");
-                return result;
+                return userDtos;
             }
             catch (Exception ex)
             {
@@ -94,18 +86,18 @@ namespace IoTMonitoring.Api.Services.UserSvr
                 var result = _userMapper.ToDetailDto(user);
 
                 // 사용자가 속한 회사 정보 추가
-                if (user.company != null)
-                {
-                    result.AssignedCompanies = new List<CompanyDto>
-                    {
-                        new CompanyDto
-                        {
-                            CompanyID = user.company.CompanyID,
-                            CompanyName = user.company.CompanyName,
-                            Active = user.company.Active
-                        }
-                    };
-                }
+                //if (user.company != null)
+                //{
+                //    result.AssignedCompanies = new List<CompanyDto>
+                //    {
+                //        new CompanyDto
+                //        {
+                //            CompanyID = user.company.CompanyID,
+                //            CompanyName = user.company.CompanyName,
+                //            Active = user.company.Active
+                //        }
+                //    };
+                //}
 
                 _logger.LogInformation($"사용자 상세 조회 완료 - ID: {id}, Username: {result.Username}");
                 return result;
@@ -142,10 +134,10 @@ namespace IoTMonitoring.Api.Services.UserSvr
 
                 // 엔티티 생성
                 var user = _userMapper.ToEntity(userDto);
-                //user.PasswordHash = HashPassword(userDto.Password);
 
                 // DB에 저장
-                var userId = await _userRepository.CreateAsync(user);
+                //var userId = await _userRepository.CreateAsync(user);
+                var userId = await _userRepository.CreateAsync(user, userDto.CompanyIDs);
                 user.UserID = userId;
 
                 _logger.LogInformation($"사용자 생성 완료 - ID: {userId}, Username: {userDto.Username}");
@@ -186,7 +178,7 @@ namespace IoTMonitoring.Api.Services.UserSvr
 
                 // 엔티티 업데이트
                 _userMapper.UpdateEntity(user, userDto);
-                await _userRepository.UpdateAsync(user);
+                await _userRepository.UpdateAsync(user, userDto.CompanyIDs.ToList());
 
                 _logger.LogInformation($"사용자 수정 완료 - ID: {id}");
             }
@@ -478,6 +470,82 @@ namespace IoTMonitoring.Api.Services.UserSvr
         public async Task<bool> CheckEmailExistsAsync(string email, int? excludeUserId = null)
         {
             return await _userRepository.ExistsByEmailAsync(email, excludeUserId);
+        }
+
+        public async Task DeleteUserAsync(int id)
+        {
+            try
+            {
+                _logger.LogInformation($"사용자 삭제 시작 - ID: {id}");
+
+                // 사용자 존재 확인
+                var user = await _userRepository.GetByIdAsync(id);
+                if (user == null)
+                {
+                    throw new KeyNotFoundException($"사용자 ID {id}를 찾을 수 없습니다.");
+                }
+
+                // 삭제 전 검증
+                // 1. 시스템 관리자 계정은 삭제 불가
+                if (user.Username?.ToLower() == "admin" || user.Username?.ToLower() == "system")
+                {
+                    throw new InvalidOperationException("시스템 관리자 계정은 삭제할 수 없습니다.");
+                }
+
+                // 2. 활성 세션이 있는지 확인 (선택사항)
+                // if (await _sessionService.HasActiveSessionAsync(id))
+                // {
+                //     throw new InvalidOperationException("현재 로그인 중인 사용자는 삭제할 수 없습니다.");
+                // }
+
+                // 3. 관련 데이터 처리 (회사 연결 등)
+                // UserCompanies 테이블의 레코드는 CASCADE DELETE로 자동 삭제되거나
+                // 명시적으로 삭제해야 할 수도 있습니다.
+
+                // 사용자 삭제
+                await _userRepository.DeleteAsync(id);
+
+                _logger.LogInformation($"사용자 삭제 완료 - ID: {id}, Username: {user.Username}");
+            }
+            catch (KeyNotFoundException)
+            {
+                _logger.LogWarning($"삭제할 사용자를 찾을 수 없음 - ID: {id}");
+                throw;
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning($"사용자 삭제 불가 - ID: {id}, 사유: {ex.Message}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"사용자 삭제 중 오류 (ID: {id}): {ex.Message}", ex);
+                throw new InvalidOperationException("사용자 삭제 중 오류가 발생했습니다.", ex);
+            }
+        }
+
+        public async Task<bool> CanDeleteUserAsync(int id)
+        {
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(id);
+                if (user == null) return false;
+
+                // 삭제 가능 여부 체크
+                if (user.Username?.ToLower() == "admin" || user.Username?.ToLower() == "system")
+                {
+                    return false;
+                }
+
+                // 추가 비즈니스 규칙 체크...
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"사용자 삭제 가능 여부 확인 중 오류 (ID: {id}): {ex.Message}", ex);
+                return false;
+            }
         }
 
         #endregion

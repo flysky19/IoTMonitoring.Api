@@ -7,9 +7,10 @@ namespace IoTMonitoring.Api.DTOs
         public int GroupID { get; set; }
         public int? CompanyID { get; set; }
         public string CompanyName { get; set; }
+
         public string GroupName { get; set; }
         public string Location { get; set; }
-        public bool Active { get; set; }
+        public bool IsActive { get; set; }
         public int SensorCount { get; set; }
     }
 

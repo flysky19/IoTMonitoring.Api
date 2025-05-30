@@ -165,6 +165,8 @@
       document.body.style.backgroundImage = `url('${images[rand]}')`;
     });
 
+    document.addEventListener('DOMContentLoaded', checkCompanyModalStructure);
+
     // 페이지 로드 시 저장된 계정 정보 불러오기 및 인증 체크
     document.addEventListener('DOMContentLoaded', function() {
       const savedUsername = localStorage.getItem('savedUsername');

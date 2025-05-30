@@ -4,29 +4,24 @@ namespace IoTMonitoring.Api.DTOs
     // 사용자 기본 정보 DTO
     public class UserDto
     {
-        //public int UserID { get; set; }
-        //public string Username { get; set; }
-        //public string Email { get; set; }
-        //public string FullName { get; set; }
-        //public bool Active { get; set; }
-        //public string Role { get; set; }
-
         public int UserID { get; set; }
+
         public string Username { get; set; }
         public string Name { get; set; }
         public string Email { get; set; }
         public string Role { get; set; }
-        public string CompanyName { get; set; } // 대표 회사명
-        public int? CompanyID { get; set; } // 대표 회사 ID
-        public string CompanyNames { get; set; } // 모든 회사명 (콤마 구분)
-        public bool IsActive { get; set; }
-        public DateTime CreatedAt { get; set; }
 
-        public DateTime? LastLogin { get; set; }
+        public string FullName { get; set; }  // 전체 이름
 
         public string Phone { get; set; }
 
-        public List<CompanyDto> AssignedCompanies { get; set; } // 할당된 모든 회사 목록
+        public List<int> CompanyIDs { get; set; }    // ✅ 다중 회사
+
+        public bool IsActive { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+
+        public DateTime? LastLogin { get; set; }
     }
 
     //// 사용자 상세 정보 DTO
@@ -47,8 +42,8 @@ namespace IoTMonitoring.Api.DTOs
         public string FullName { get; set; }
         public string Phone { get; set; }
         public bool Active { get; set; } = true;
-        public string[] Roles { get; set; }
-        public int[] CompanyIDs { get; set; }
+        public string Role { get; set; }
+        public List<int> CompanyIDs { get; set; }
     }
 
     // 사용자 업데이트 DTO
@@ -57,8 +52,8 @@ namespace IoTMonitoring.Api.DTOs
         public string Email { get; set; }
         public string FullName { get; set; }
         public string Phone { get; set; }
-        public bool Active { get; set; }
-        public string[] Roles { get; set; }
+        public bool IsActive { get; set; }
+        public string Role { get; set; }
         public int[] CompanyIDs { get; set; }
     }
 

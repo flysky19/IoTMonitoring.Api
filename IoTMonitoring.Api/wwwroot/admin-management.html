@@ -211,6 +211,25 @@
             max-width: 400px;
         }
 
+        .actions {
+            display: flex;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-sm {
+            padding: 0.2rem 0.5rem;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        /* 위험한 작업 버튼 강조 */
+        .btn.danger:hover {
+            background-color: #c82333;
+            box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.3);
+        }
+
+
             .search-box input {
                 flex: 1;
                 padding: 0.5rem 1rem;
@@ -598,13 +617,13 @@
 
     <!-- 탭 메뉴 -->
     <div class="tabs">
-        <button class="tab active" onclick="showTab('sensors')">
+        <button class="tab active" onclick="showTab('sensors', event)">
             <span class="tab-icon">📡</span>센서 관리
         </button>
-        <button class="tab" onclick="showTab('users')">
+        <button class="tab" onclick="showTab('users', event)">
             <span class="tab-icon">👥</span>사용자 관리
         </button>
-        <button class="tab" onclick="showTab('companies')">
+        <button class="tab" onclick="showTab('companies', event)">
             <span class="tab-icon">🏢</span>회사 관리
         </button>
     </div>
@@ -824,7 +843,8 @@
 
                     <div class="form-group">
                         <label for="roles">역할 *</label>
-                        <select id="roles" multiple>
+                        <select id="roles" required>
+                            <option value="">선택하세요</option>
                             <option value="Admin">관리자</option>
                             <option value="User" selected>일반 사용자</option>
                         </select>
@@ -889,8 +909,8 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="companyCode">회사 코드</label>
-                        <input type="text" id="companyCode">
+                        <label for="contactPerson">담당자</label>
+                        <input type="text" id="contactPerson">
                     </div>
 
                     <div class="form-group">
@@ -958,8 +978,22 @@
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
+
             // 선택된 탭 활성화
-            event.target.closest('.tab').classList.add('active');
+            if (event && event.target) {
+                event.target.closest('.tab').classList.add('active');
+            } else {
+                // event가 없는 경우 탭 이름으로 찾기
+                document.querySelectorAll('.tab').forEach(tab => {
+                    if (tab.textContent.includes(
+                        tabName === 'sensors' ? '센서' :
+                            tabName === 'users' ? '사용자' : '회사'
+                    )) {
+                        tab.classList.add('active');
+                    }
+                });
+            }
+
             document.getElementById(`${tabName}-tab`).classList.add('active');
 
             currentTab = tabName;
@@ -1133,26 +1167,16 @@
 
                 console.log('Companies response status:', response.status);
 
-                if (response.status === 401) {
-                    alert('인증이 만료되었습니다. 다시 로그인해주세요.');
-                    window.location.href = '/login.html';
-                    return;
-                }
-
-                if (response.status === 403) {
-                    console.error('접근 권한이 없습니다.');
-                    // 회사 목록을 볼 권한이 없을 수 있으므로 빈 배열로 처리
-                    companies = [];
-                    if (currentTab === 'companies') {
-                        updateCompanyStats();
-                        renderCompanies();
-                    }
-                    return;
-                }
-
+                
                 if (response.ok) {
                     companies = await response.json();
                     console.log('Loaded companies:', companies);
+
+                    // 첫 번째 회사 객체의 구조 확인
+                    if (companies.length > 0) {
+                        console.log('Sample company object:', companies[0]);
+                        console.log('Company properties:', Object.keys(companies[0]));
+                    }
 
                     if (currentTab === 'companies') {
                         updateCompanyStats();
@@ -1171,10 +1195,55 @@
         }
 
         function updateCompanySelect() {
+            //const select = document.getElementById('companies');
+            //select.innerHTML = companies.map(company =>
+            //    `<option value="${company.companyID}">${company.name}</option>`
+            //).join('');
             const select = document.getElementById('companies');
-            select.innerHTML = companies.map(company =>
-                `<option value="${company.companyID}">${company.name}</option>`
-            ).join('');
+
+            console.log('updateCompanySelect called');
+            console.log('Companies array:', companies);
+
+            // select 요소가 존재하는지 확인
+            if (!select) {
+                console.error('companies select element not found');
+                return;
+            }
+
+            select.innerHTML = '';
+
+            if (!companies || companies.length === 0) {
+                const option = new Option('등록된 회사가 없습니다', '');
+                option.disabled = true;
+                select.add(option);
+                return;
+            }
+
+            companies.forEach((company, index) => {
+                console.log(`Company ${index}:`, company);
+
+                // 회사 객체의 모든 속성 확인
+                console.log('Company properties:', Object.keys(company));
+
+                const option = document.createElement('option');
+
+                // 다양한 속성명 시도
+                const companyName = company.companyName || 'Unknown';  // companyName 사용
+                const companyId = company.companyID;  // companyID 사용 (대문자 ID)
+
+
+                option.text = companyName;
+                option.value = companyId;
+
+                if (company.isActive === false) {
+                    option.text += ' (비활성)';
+                    option.style.color = '#999';
+                }
+
+                select.add(option);
+            });
+
+            console.log('Company select updated successfully');
         }
 
         function updateUserStats() {
@@ -1205,7 +1274,7 @@
                 <tr>
                     <td>${user.userID}</td>
                     <td>${user.username}</td>
-                    <td>${user.name || '-'}</td>
+                    <td>${user.fullName || user.name || '-'}</td>  <!-- fullName 우선 표시 -->
                     <td>${user.email}</td>
                     <td><span class="badge ${user.role?.toLowerCase()}">${user.role}</span></td>
                     <td>${user.companyNames || user.companyName || '-'}</td>
@@ -1219,6 +1288,7 @@
                                 `<button class="btn btn-sm danger" onclick="toggleUserStatus(${user.userID}, false)">비활성화</button>` :
                                 `<button class="btn btn-sm success" onclick="toggleUserStatus(${user.userID}, true)">활성화</button>`
                             }
+                            <button class="btn btn-sm danger" onclick="deleteUser(${user.userID}, '${user.username}')">삭제</button>
                         </div>
                     </td>
                 </tr>
@@ -1236,7 +1306,66 @@
             document.getElementById('username').disabled = false;
             document.getElementById('passwordGroup').style.display = 'block';
             document.getElementById('password').required = true;
+
+            // ✅ 회사 목록 로드 및 업데이트
+            loadCompanies().then(() => {
+                updateCompanySelect();
+            });
+
             document.getElementById('userModal').style.display = 'block';
+        }
+
+        async function deleteUser(userId, username) {
+            // 삭제 확인 대화상자
+            const confirmMessage = `정말로 사용자 "${username}"을(를) 완전히 삭제하시겠습니까?\n\n⚠️ 주의: 이 작업은 되돌릴 수 없습니다.`;
+
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+
+            // 한 번 더 확인 (중요한 작업이므로)
+            const secondConfirm = prompt(`삭제를 확인하려면 사용자명 "${username}"을(를) 입력하세요:`);
+
+            if (secondConfirm !== username) {
+                alert('사용자명이 일치하지 않습니다. 삭제가 취소되었습니다.');
+                return;
+            }
+
+            try {
+                console.log(`Deleting user ${userId}...`);
+
+                const response = await fetch(`/api/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    alert(`사용자 "${username}"이(가) 성공적으로 삭제되었습니다.`);
+
+                    // 사용자 목록 새로고침
+                    await loadUsers();
+                } else if (response.status === 403) {
+                    alert('권한이 없습니다. 관리자만 사용자를 삭제할 수 있습니다.');
+                } else if (response.status === 404) {
+                    alert('사용자를 찾을 수 없습니다.');
+                } else {
+                    const errorText = await response.text();
+                    console.error('Delete error:', errorText);
+
+                    try {
+                        const errorObj = JSON.parse(errorText);
+                        alert(`삭제 실패: ${errorObj.message || errorObj.title || '알 수 없는 오류'}`);
+                    } catch {
+                        alert(`삭제 실패: ${errorText}`);
+                    }
+                }
+            } catch (error) {
+                console.error('사용자 삭제 중 오류:', error);
+                alert('사용자 삭제 중 오류가 발생했습니다: ' + error.message);
+            }
         }
 
         async function editUser(userId) {
@@ -1254,16 +1383,45 @@
                     document.getElementById('username').disabled = true;
                     document.getElementById('passwordGroup').style.display = 'none';
                     document.getElementById('password').required = false;
-                    document.getElementById('fullName').value = user.name || '';
+                    document.getElementById('fullName').value = user.fullName || user.name || '';
                     document.getElementById('email').value = user.email;
                     document.getElementById('phone').value = user.phone || '';
                     document.getElementById('active').checked = user.isActive;
 
                     // 역할 설정
-                    const rolesSelect = document.getElementById('roles');
-                    Array.from(rolesSelect.options).forEach(option => {
-                        option.selected = user.role === option.value;
-                    });
+                    document.getElementById('roles').value = user.role || 'User';
+
+                    await loadCompanies();
+                    updateCompanySelect();
+
+                    // 사용자의 회사 선택
+                    //const companiesSelect = document.getElementById('companies');
+                    //if (user.companyIDs && companiesSelect) {
+                    //    Array.from(companiesSelect.options).forEach(option => {
+                    //        option.selected = user.companyIDs.includes(parseInt(option.value));
+                    //    });
+                    //}
+                    setTimeout(() => {
+                        const companiesSelect = document.getElementById('companies');
+                        if (user.companyIDs && companiesSelect) {
+                            // 모든 옵션의 선택 상태 초기화
+                            Array.from(companiesSelect.options).forEach(option => {
+                                option.selected = false;
+                            });
+
+                            // 사용자의 회사 ID들을 선택
+                            user.companyIDs.forEach(companyId => {
+                                Array.from(companiesSelect.options).forEach(option => {
+                                    if (parseInt(option.value) === companyId) {
+                                        option.selected = true;
+                                    }
+                                });
+                            });
+                        } else if (user.companyID && companiesSelect) {
+                            // 단일 회사 ID인 경우
+                            companiesSelect.value = user.companyID.toString();
+                        }
+                    }, 100); // 회사 목록 로드 완료 대기
 
                     document.getElementById('userModal').style.display = 'block';
                 }
@@ -1317,24 +1475,72 @@
 
         async function toggleUserStatus(userId, activate) {
             const action = activate ? '활성화' : '비활성화';
+            const confirmMessage = `이 사용자를 ${action}하시겠습니까?`;
 
-            if (confirm(`정말로 이 사용자를 ${action}하시겠습니까?`)) {
-                try {
-                    const url = activate ? `/api/users/${userId}/activate` : `/api/users/${userId}`;
-                    const method = activate ? 'POST' : 'DELETE';
+            if (!confirm(confirmMessage)) {
+                return;
+            }
 
-                    const response = await fetch(url, {
-                        method: method,
-                        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
-                    });
+            try {
+                const endpoint = activate
+                    ? `/api/users/${userId}/activate`
+                    : `/api/users/${userId}/deactivate`;
 
-                    if (response.ok) {
-                        alert(`사용자가 ${action}되었습니다.`);
-                        loadUsers();
-                    }
-                } catch (error) {
-                    alert(`${action} 실패: ` + error.message);
+                // ❌ 아래 코드 블록은 삭제하거나 주석 처리
+                /*
+                // 먼저 사용자 정보를 가져옴
+                const userResponse = await fetch(`/api/users/${userId}`, {
+                    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                });
+        
+                if (!userResponse.ok) {
+                    const errorText = await userResponse.text();
+                    alert(`사용자 정보를 가져오는 데 실패했습니다: ${errorText}`);
+                    return;
                 }
+        
+                const user = await userResponse.json();
+        
+                // isActive만 변경하여 PUT 요청
+                const updateData = {
+                    username: user.username,
+                    fullName: user.fullName || user.name,
+                    email: user.email,
+                    phone: user.phone,
+                    role: user.role,
+                    companyIDs: user.companyIDs || [],
+                    isActive: activate  // 상태 변경
+                };
+        
+                const response = await fetch(`/api/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                */
+
+                // ✅ 올바른 코드 (response 변수 중복 선언 제거)
+                const response = await fetch(endpoint, {
+                    method: 'PUT',  // 컨트롤러 메서드와 일치
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    alert(`사용자가 ${action}되었습니다.`);
+                    await loadUsers();
+                } else {
+                    const errorText = await response.text();
+                    alert(`${action} 실패: ${errorText}`);
+                }
+            } catch (error) {
+                console.error(`${action} 중 오류:`, error);
+                alert(`${action} 중 오류가 발생했습니다: ${error.message}`);
             }
         }
 
@@ -1345,19 +1551,54 @@
             const userId = document.getElementById('userId').value;
             const isNew = !userId;
 
+            const isActiveValue = document.getElementById('active').checked ? true : false;
+
+            // API 요구사항에 맞게 필드명 수정
             const userData = {
                 username: document.getElementById('username').value,
-                name: document.getElementById('fullName').value,
+                fullName: document.getElementById('fullName').value,
                 email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
-                isActive: document.getElementById('active').checked,
+                phone: document.getElementById('phone').value || '',
+                password: document.getElementById('password').value,
                 role: document.getElementById('roles').value,
-                companyID: parseInt(document.getElementById('companies').value) || null
+                companyIDs: [],
+                isActive: isActiveValue
             };
 
+            // 회사 선택 처리 (다중 선택인 경우)
+            const companiesSelect = document.getElementById('companies');
+            if (companiesSelect) {
+                userData.companyIDs = Array.from(companiesSelect.selectedOptions)
+                    .map(option => parseInt(option.value))
+                    .filter(id => !isNaN(id));
+            }
+
+            // 새 사용자인 경우 비밀번호 추가
             if (isNew) {
                 userData.password = document.getElementById('password').value;
+
+                // 필수 필드 검증
+                if (!userData.password) {
+                    alert('비밀번호를 입력해주세요.');
+                    return;
+                }
             }
+
+            console.log('Saving user data:', userData); // 디버깅용
+
+            // 필수 필드 검증
+            if (!userData.fullName) {
+                alert('전체 이름을 입력해주세요.');
+                return;
+            }
+
+            if (!userData.role) {
+                alert('역할을 선택해주세요.');
+                return;
+            }
+
+
+            console.log('전송할 데이터:', userData);
 
             try {
                 const response = await fetch(isNew ? '/api/users' : `/api/users/${userId}`, {
@@ -1374,13 +1615,29 @@
                     closeUserModal();
                     loadUsers();
                 } else {
-                    const error = await response.text();
-                    alert('저장 실패: ' + error);
+                    const errorText = await response.text();
+                    console.error('저장 실패:', errorText);
+
+                    try {
+                        const errorObj = JSON.parse(errorText);
+                        if (errorObj.errors) {
+                            let errorMessage = '다음 항목을 확인해주세요:\n';
+                            for (const [field, messages] of Object.entries(errorObj.errors)) {
+                                errorMessage += `\n${field}: ${messages.join(', ')}`;
+                            }
+                            alert(errorMessage);
+                        } else {
+                            alert('저장 실패: ' + (errorObj.title || errorText));
+                        }
+                    } catch {
+                        alert('저장 실패: ' + errorText);
+                    }
                 }
             } catch (error) {
                 alert('저장 중 오류가 발생했습니다: ' + error.message);
             }
         });
+
 
         // === 회사 관리 함수들 ===
         async function loadCompanies() {
@@ -1459,6 +1716,10 @@
                 </div>
                 <div class="actions" style="margin-top: 1rem;">
                     <button class="btn btn-sm" onclick="editCompany(${company.companyID})">수정</button>
+                    ${company.active ?
+                    `<button class="btn btn-sm warning" onclick="toggleCompanyStatus(${company.companyID}, false)">비활성화</button>` :
+                    `<button class="btn btn-sm success" onclick="toggleCompanyStatus(${company.companyID}, true)">활성화</button>`
+                }
                     <button class="btn btn-sm danger" onclick="deleteCompany(${company.companyID})">삭제</button>
                 </div>
             </div>
@@ -1466,38 +1727,117 @@
     `).join('');
         }
 
+        async function toggleCompanyStatus(companyId, activate) {
+            const action = activate ? '활성화' : '비활성화';
+            const endpoint = activate ?
+                `/api/companies/${companyId}/activate` :
+                `/api/companies/${companyId}/deactivate`;
+
+            if (!confirm(`이 회사를 ${action}하시겠습니까?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',  // ✅ PUT이 아닌 POST 사용
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    alert(`회사가 ${action}되었습니다.`);
+                    await loadCompanies();
+                } else {
+                    const errorText = await response.text();
+                    alert(`${action} 실패: ${errorText}`);
+                }
+            } catch (error) {
+                console.error(`Company ${action} error:`, error);
+                alert(`회사 ${action} 중 오류가 발생했습니다.`);
+            }
+        }
+
         function searchCompanies() {
             renderCompanies();
         }
 
         function openAddCompanyModal() {
-            document.getElementById('companyModalTitle').textContent = '새 회사 추가';
+            // 모달 제목 설정
+            // 타이틀 요소가 있는지 확인
+            const titleElement = document.getElementById('companyModalTitle');
+            if (titleElement) {
+                titleElement.textContent = '새 회사 추가';
+            } else {
+                console.warn('companyModalTitle element not found');
+            }
+
+            // 폼 초기화
             document.getElementById('companyForm').reset();
-            document.getElementById('companyId').value = '';
+            document.getElementById('companyId').value = ''; // hidden 필드 초기화
+            document.getElementById('companyActive').checked = true; // 기본값 활성
+
+            // 모달 표시
             document.getElementById('companyModal').style.display = 'block';
+        }
+
+        function checkCompanyModalStructure() {
+            const modal = document.getElementById('companyModal');
+            const title = document.getElementById('companyModalTitle');
+            const form = document.getElementById('companyForm');
+
+            console.log('Modal exists:', !!modal);
+            console.log('Title exists:', !!title);
+            console.log('Form exists:', !!form);
+
+            if (!title) {
+                console.log('Creating modal title element...');
+                // 타이틀이 없다면 동적으로 생성
+                const modalHeader = modal.querySelector('.modal-header');
+                if (modalHeader && !modalHeader.querySelector('#companyModalTitle')) {
+                    const h2 = document.createElement('h2');
+                    h2.id = 'companyModalTitle';
+                    h2.textContent = '새 회사 추가';
+                    modalHeader.insertBefore(h2, modalHeader.firstChild);
+                }
+            }
         }
 
         async function editCompany(companyId) {
             try {
+                // 회사 정보 로드
                 const response = await fetch(`/api/companies/${companyId}`, {
                     headers: { 'Authorization': `Bearer ${getAuthToken()}` }
                 });
 
-                if (response.ok) {
-                    const company = await response.json();
-
-                    document.getElementById('companyModalTitle').textContent = '회사 수정';
-                    document.getElementById('companyId').value = company.companyID;
-                    document.getElementById('companyName').value = company.name;
-                    document.getElementById('companyCode').value = company.code || '';
-                    document.getElementById('address').value = company.address || '';
-                    document.getElementById('phone').value = company.phone || '';
-                    document.getElementById('companyEmail').value = company.email || '';
-                    document.getElementById('companyActive').checked = company.isActive;
-
-                    document.getElementById('companyModal').style.display = 'block';
+                if (!response.ok) {
+                    throw new Error('회사 정보를 불러올 수 없습니다.');
                 }
+
+                const company = await response.json();
+                console.log('Loaded company:', company);
+
+                // 모달 제목 변경
+                const titleElement = document.getElementById('companyModalTitle');
+                if (titleElement) {
+                    titleElement.textContent = '회사 수정';
+                }
+
+
+                // 폼 필드에 데이터 채우기
+                document.getElementById('companyId').value = company.companyID;
+                document.getElementById('companyName').value = company.companyName || '';
+                document.getElementById('contactPerson').value = company.contactPerson || '';
+                document.getElementById('address').value = company.address || '';
+                document.getElementById('phone').value = company.contactPhone || '';
+                document.getElementById('companyEmail').value = company.contactEmail || '';
+                document.getElementById('companyActive').checked = company.active;
+
+                // 모달 표시
+                document.getElementById('companyModal').style.display = 'block';
             } catch (error) {
+                console.error('Error loading company:', error);
                 alert('회사 정보 로드 실패: ' + error.message);
             }
         }
@@ -1505,65 +1845,39 @@
         function closeCompanyModal() {
             document.getElementById('companyModal').style.display = 'none';
             document.getElementById('companyForm').reset();
+            document.getElementById('companyId').value = ''; // hidden 필드도 초기화
         }
 
         async function deleteCompany(companyId) {
-            if (!confirm('정말로 이 회사를 삭제하시겠습니까?')) return;
+            // 삭제 전 확인
+            if (!confirm('정말로 이 회사를 삭제하시겠습니까?\n\n⚠️ 주의: 이 작업은 되돌릴 수 없습니다.')) {
+                return;
+            }
 
             try {
                 const response = await fetch(`/api/companies/${companyId}`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
 
                 if (response.ok) {
                     alert('회사가 삭제되었습니다.');
-                    loadCompanies();
+                    await loadCompanies(); // 목록 새로고침
+                } else if (response.status === 400) {
+                    alert('이 회사는 사용 중이므로 삭제할 수 없습니다.');
+                } else {
+                    const errorText = await response.text();
+                    alert('삭제 실패: ' + errorText);
                 }
             } catch (error) {
-                alert('회사 삭제 실패: ' + error.message);
+                console.error('Error deleting company:', error);
+                alert('회사 삭제 중 오류가 발생했습니다: ' + error.message);
             }
         }
 
-        // 회사 폼 필드도 수정
-        document.getElementById('companyForm').innerHTML = `
-    <input type="hidden" id="companyId">
-    
-    <div class="form-group">
-        <label for="companyName">회사명 *</label>
-        <input type="text" id="companyName" required>
-    </div>
-    
-    <div class="form-group">
-        <label for="contactPerson">담당자</label>
-        <input type="text" id="contactPerson">
-    </div>
-    
-    <div class="form-group">
-        <label for="address">주소</label>
-        <input type="text" id="address">
-    </div>
-    
-    <div class="form-group">
-        <label for="contactPhone">전화번호</label>
-        <input type="tel" id="contactPhone">
-    </div>
-    
-    <div class="form-group">
-        <label for="contactEmail">이메일</label>
-        <input type="email" id="contactEmail">
-    </div>
-    
-    <div class="form-group">
-        <input type="checkbox" id="companyActive" checked>
-        <label for="companyActive" style="display: inline; margin-left: 0.5rem;">활성 상태</label>
-    </div>
-    
-    <div class="form-actions">
-        <button type="button" class="btn secondary" onclick="closeCompanyModal()">취소</button>
-        <button type="submit" class="btn">저장</button>
-    </div>
-`;
 
         // 회사 폼 제출
         document.getElementById('companyForm').addEventListener('submit', async (e) => {
@@ -1572,14 +1886,41 @@
             const companyId = document.getElementById('companyId').value;
             const isNew = !companyId;
 
+            // 각 필드 값을 개별적으로 확인
+            const companyName = document.getElementById('companyName').value;
+            const contactPerson = document.getElementById('contactPerson').value || '';
+            const address = document.getElementById('address').value || '';
+            const phone = document.getElementById('phone').value || '';
+            const companyEmail = document.getElementById('companyEmail').value || '';
+            const companyActive = document.getElementById('companyActive').checked;
+
+            // 디버깅: 각 필드 값 출력
+            console.log('Field values:', {
+                companyName,
+                contactPerson,
+                address,
+                phone,  // 이 값이 제대로 나오는지 확인
+                companyEmail,
+                companyActive
+            });
+
             const companyData = {
-                name: document.getElementById('companyName').value,
-                code: document.getElementById('companyCode').value,
-                address: document.getElementById('address').value,
-                phone: document.getElementById('phone').value,
-                email: document.getElementById('companyEmail').value,
-                isActive: document.getElementById('companyActive').checked
+                CompanyName: companyName,
+                ContactPerson: contactPerson,
+                Address: address,
+                ContactPhone: phone,  // ✅ phone 변수 사용
+                ContactEmail: companyEmail,
+                Active: companyActive
             };
+
+
+            // 필수 필드 검증
+            if (!companyData.CompanyName) {
+                alert('회사명을 입력해주세요.');
+                return;
+            }
+
+            console.log('Saving company:', { isNew, companyId, data: companyData });
 
             try {
                 const response = await fetch(isNew ? '/api/companies' : `/api/companies/${companyId}`, {
@@ -1591,15 +1932,35 @@
                     body: JSON.stringify(companyData)
                 });
 
-                if (response.ok) {
+
+                if (response.ok || response.status === 201) {
                     alert(isNew ? '회사가 생성되었습니다.' : '회사 정보가 수정되었습니다.');
                     closeCompanyModal();
                     loadCompanies();
                 } else {
-                    const error = await response.text();
-                    alert('저장 실패: ' + error);
+                    // 에러 처리
+                    let errorMessage = '저장 실패';
+
+                    try {
+                        const errorText = await response.text();
+                        console.error('Error response:', errorText);
+
+                        if (errorText) {
+                            try {
+                                const errorObj = JSON.parse(errorText);
+                                errorMessage = errorObj.message || errorObj.title || errorText;
+                            } catch {
+                                errorMessage = errorText;
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error reading response:', e);
+                    }
+
+                    alert(errorMessage);
                 }
             } catch (error) {
+                console.error('Save error:', error);
                 alert('저장 중 오류가 발생했습니다: ' + error.message);
             }
         });
@@ -1607,6 +1968,21 @@
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', () => {
             loadSensors();
+
+            // 폼 이벤트 리스너가 등록되었는지 확인
+            const companyForm = document.getElementById('companyForm');
+            if (companyForm) {
+                console.log('Company form found and event listener attached');
+            } else {
+                console.error('Company form not found!');
+            }
+
+            const userForm = document.getElementById('userForm');
+            if (userForm) {
+                console.log('User form found and event listener attached');
+            } else {
+                console.error('User form not found!');
+            }
         });
 
         // 모달 외부 클릭 시 닫기

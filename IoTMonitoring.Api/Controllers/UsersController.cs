@@ -155,22 +155,6 @@ namespace IoTMonitoring.Api.Controllers
             }
         }
 
-        // 사용자 역할 변경 (관리자 전용)
-        [HttpPut("{id}/roles")]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult> UpdateUserRoles(int id, [FromBody] UserRoleAssignmentDto roleDto)
-        {
-            try
-            {
-                await _userService.UpdateUserRolesAsync(id, roleDto.Roles);
-                return NoContent();
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound($"User with ID {id} not found");
-            }
-        }
-
         // 사용자 회사 할당 변경 (관리자 전용)
         [HttpPut("{id}/companies")]
         [Authorize(Roles = "Admin")]
@@ -188,34 +172,44 @@ namespace IoTMonitoring.Api.Controllers
         }
 
         // 사용자 비활성화 (관리자 전용)
-        [HttpDelete("{id}")]
+        [HttpPut("{id}/deactivate")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> DeactivateUser(int id)
         {
             try
             {
                 await _userService.DeactivateUserAsync(id);
-                return NoContent();
+                return Ok(new { message = "사용자가 비활성화되었습니다." });
             }
             catch (KeyNotFoundException)
             {
-                return NotFound($"User with ID {id} not found");
+                return NotFound(new { message = "사용자를 찾을 수 없습니다." });
+            }
+            catch (Exception ex)
+            {
+                //_logger.LogError(ex, "사용자 비활성화 중 오류 발생");
+                return StatusCode(500, new { message = "서버 오류가 발생했습니다." });
             }
         }
 
         // 사용자 활성화 (관리자 전용)
-        [HttpPost("{id}/activate")]
+        [HttpPut("{id}/activate")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> ActivateUser(int id)
         {
             try
             {
                 await _userService.ActivateUserAsync(id);
-                return NoContent();
+                return Ok(new { message = "사용자가 활성화되었습니다." });
             }
             catch (KeyNotFoundException)
             {
-                return NotFound($"User with ID {id} not found");
+                return NotFound(new { message = "사용자를 찾을 수 없습니다." });
+            }
+            catch (Exception ex)
+            {
+                //_logger.LogError(ex, "사용자 활성화 중 오류 발생");
+                return StatusCode(500, new { message = "서버 오류가 발생했습니다." });
             }
         }
 
@@ -227,6 +221,46 @@ namespace IoTMonitoring.Api.Controllers
                 return userId;
 
             throw new InvalidOperationException("Unable to retrieve current user ID");
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            try
+            {
+                // 현재 로그인한 사용자 ID 가져오기
+                var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+                // 자기 자신은 삭제할 수 없음
+                if (id == currentUserId)
+                {
+                    return BadRequest("자기 자신은 삭제할 수 없습니다.");
+                }
+
+                // 삭제 가능 여부 확인
+                if (!await _userService.CanDeleteUserAsync(id))
+                {
+                    return BadRequest("이 사용자는 삭제할 수 없습니다.");
+                }
+
+                await _userService.DeleteUserAsync(id);
+
+                return NoContent(); // 204 No Content
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                //_logger.LogError($"사용자 삭제 중 오류 발생: {ex.Message}", ex);
+                return StatusCode(500, "사용자 삭제 중 오류가 발생했습니다.");
+            }
         }
     }
 }

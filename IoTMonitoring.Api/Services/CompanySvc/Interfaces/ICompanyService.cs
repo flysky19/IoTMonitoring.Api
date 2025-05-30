@@ -1,4 +1,5 @@
-﻿using IoTMonitoring.Api.DTOs;
+﻿using IoTMonitoring.Api.Data.Models;
+using IoTMonitoring.Api.DTOs;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -22,5 +23,6 @@ namespace IoTMonitoring.Api.Services.CompanySvc.Interfaces
         // 회사 사용자 관리
         Task<IEnumerable<UserDto>> GetCompanyUsersAsync(int companyId);
         Task<int> GetSensorCountByCompanyAsync(int companyId, bool activeOnly = true);
+
     }
 }

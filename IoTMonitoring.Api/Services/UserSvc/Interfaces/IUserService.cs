@@ -34,5 +34,8 @@ namespace IoTMonitoring.Api.Services.UserSvr.Interfaces
         // 유효성 검사
         Task<bool> CheckUsernameExistsAsync(string username, int? excludeUserId = null);
         Task<bool> CheckEmailExistsAsync(string email, int? excludeUserId = null);
+
+        Task DeleteUserAsync(int id);
+        Task<bool> CanDeleteUserAsync(int id);
     }
 }

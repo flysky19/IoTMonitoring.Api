@@ -105,14 +105,37 @@ namespace IoTMonitoring.Api.Data.Repositories
         {
             using (var connection = await _connectionFactory.CreateConnectionAsync())
             {
-                // Soft delete - 실제로는 Active를 false로 설정
-                var rowsAffected = await connection.ExecuteAsync(
-                    @"UPDATE Companies 
-                      SET Active = 0, UpdatedAt = GETUTCDATE() 
-                      WHERE CompanyID = @CompanyID",
-                    new { CompanyID = companyId });
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        // 1. 관련 데이터 삭제 (예: 사용자-회사 관계)
+                        await connection.ExecuteAsync(
+                            "DELETE FROM UserCompanies WHERE CompanyID = @CompanyID",
+                            new { CompanyID = companyId },
+                            transaction);
 
-                return rowsAffected > 0;
+                        // 2. 관련 센서 그룹 삭제 또는 연결 해제
+                        await connection.ExecuteAsync(
+                            "DELETE FROM SensorGroups WHERE CompanyID = @CompanyID",
+                            new { CompanyID = companyId },
+                            transaction);
+
+                        // 3. 회사 삭제
+                        var rowsAffected = await connection.ExecuteAsync(
+                            "DELETE FROM Companies WHERE CompanyID = @CompanyID",
+                            new { CompanyID = companyId },
+                            transaction);
+
+                        transaction.Commit();
+                        return rowsAffected > 0;
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
             }
         }
 
@@ -240,6 +263,55 @@ namespace IoTMonitoring.Api.Data.Repositories
                     new { CompanyID = companyId });
 
                 return rowsAffected > 0;
+            }
+        }
+
+        public async Task<IEnumerable<SensorGroup>> GetSensorGroupsByCompanyIdAsync(int companyId)
+        {
+            using (var connection = await _connectionFactory.CreateConnectionAsync())
+            {
+                var sql = @"
+            SELECT sg.*, COUNT(s.SensorID) as SensorCount
+            FROM SensorGroups sg
+            LEFT JOIN Sensors s ON sg.GroupID = s.GroupID
+            WHERE sg.CompanyID = @CompanyID
+            GROUP BY sg.GroupID, sg.GroupName, sg.Description, 
+                     sg.CompanyID, sg.IsActive, sg.CreatedAt, sg.UpdatedAt
+            ORDER BY sg.GroupName";
+
+                var groups = await connection.QueryAsync<SensorGroup>(sql, new { CompanyID = companyId });
+                return groups;
+            }
+        }
+
+        public async Task<IEnumerable<User>> GetUsersByCompanyIdAsync(int companyId)
+        {
+            using (var connection = await _connectionFactory.CreateConnectionAsync())
+            {
+                var sql = @"
+            SELECT u.*
+            FROM Users u
+            INNER JOIN UserCompanies uc ON u.UserID = uc.UserID
+            WHERE uc.CompanyID = @CompanyID AND u.IsActive = 1
+            ORDER BY u.Username";
+
+                return await connection.QueryAsync<User>(sql, new { CompanyID = companyId });
+            }
+        }
+
+        public async Task<int> GetActiveSensorCountByCompanyIdAsync(int companyId)
+        {
+            using (var connection = await _connectionFactory.CreateConnectionAsync())
+            {
+                var sql = @"
+            SELECT COUNT(DISTINCT s.SensorID)
+            FROM Sensors s
+            INNER JOIN SensorGroups sg ON s.GroupID = sg.GroupID
+            WHERE sg.CompanyID = @CompanyID 
+                AND s.Status = 'active' 
+                AND sg.IsActive = 1";
+
+                return await connection.ExecuteScalarAsync<int>(sql, new { CompanyID = companyId });
             }
         }
     }
